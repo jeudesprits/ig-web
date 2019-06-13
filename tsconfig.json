@@ -8,6 +8,7 @@
       "dom"
     ],
     "outDir": "dist",
+    "removeComments": true,
     /* Strict Type-Checking Options */
     "noImplicitAny": true,
     "noImplicitThis": true,
