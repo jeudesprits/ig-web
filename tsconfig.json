@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    /* Basic Options */
+    "target": "es6",
+    "module": "commonjs",
+    "lib": [
+      "es2019",
+      "dom"
+    ],
+    "outDir": "dist",
+    /* Strict Type-Checking Options */
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "strictBindCallApply": true,
+    "strictNullChecks": true,
+    /* Additional Checks */
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    /* Module Resolution Options */
+    "baseUrl": ".",
+    "moduleResolution": "node",
+    "paths": {
+      "*": [
+        "node_modules/*",
+        "src/types/*"
+      ]
+    },
+    "esModuleInterop": true,
+    /* Experimental Options */
+    "experimentalDecorators": true
+  },
+  "include": [
+    "src/**/*"
+  ]
+}
