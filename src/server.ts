@@ -1,14 +1,8 @@
-console.log('Hello, muchachos!');
+import Browser from './browser';
 
-function isValidJSON(text: string): boolean {
-  try {
-    JSON.parse(text);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-for (const item of [1, 2, 3]) {
-  console.log(item);
-}
+// tslint:disable-next-line: no-floating-promises
+(async () => {
+  await Browser.launch();
+  const page = (await Browser.browser.pages()).pop()!;
+  await page.goto('https://www.instagram.com');
+})();
