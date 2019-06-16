@@ -5,28 +5,24 @@ export default class Browser {
   static browser: puppeteer.Browser;
 
   static async launch() {
-    return new Promise<void>((res, rej) => {
-      puppeteer.launch({
-        args: [
-          '--user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 12_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1.1 Mobile/15E148 Safari/604.1',
-        ],
-        headless: false,
-        userDataDir: 'chromium',
-        defaultViewport: {
-          width: 414,
-          height: 896,
-          deviceScaleFactor: 3,
-          isMobile: true,
-          hasTouch: true,
-          isLandscape: false,
-        },
-      }).then(val => {
-        this.browser = val;
-        res();
-      }).catch(e => {
-        rej(e);
-      })
-    })
+    this.browser = await puppeteer.launch({
+      args: [
+        '--user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 12_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1.1 Mobile/15E148 Safari/604.1',
+      ],
+      headless: false,
+      userDataDir: 'chromium',
+      defaultViewport: {
+        width: 414,
+        height: 896,
+        deviceScaleFactor: 3,
+        isMobile: true,
+        hasTouch: true,
+        isLandscape: false,
+      },
+    });
+
+    const unnecessaryPage = (await this.browser.pages())[0];
+    await unnecessaryPage.close();
   }
 
   static async newPage() {
