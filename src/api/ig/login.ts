@@ -144,42 +144,6 @@ export default class IGApi {
     });
   }
 
-  // async *profileMedia(username: string) {
-  //   await this.sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
-
-  //   const { meidaCount } = await this.profileInfo(username);
-  //   let curCount = 0;
-
-  //   do {
-  //     const rows = await this.sessionPage.$$('article.FyNDV > div > div > div:nth-last-child(-n+8)');
-
-  //     for (const row of rows) {
-  //       for (const item of (await row.$$('div._bz0w'))) {
-  //         const a = await item.$('a');
-  //         const href: string = await (await a!.getProperty('href')).jsonValue();
-  //         const img = await item.$('img');
-  //         const srcset: string = await (await img!.getProperty('srcset')).jsonValue();
-
-  //         let images: any = {};
-  //         srcset.split(',').forEach(str => {
-  //           const split = str.split(' ');
-  //           images[split[1]] = split[0];
-  //         })
-
-  //         yield {
-  //           mediaUri: href,
-  //           images,
-  //         };
-  //       }
-  //     }
-
-  //     await this.sessionPage.evaluate(() => window.scrollTo(0, window.document.body.scrollHeight));
-  //     await timeout(2000);
-
-  //     curCount += rows.length;
-  //   } while (curCount < meidaCount);
-  // }
-
   async *profileMedia(username: string) {
     let [curRes] = await Promise.all([
       this.sessionPage.waitForResponse(res =>
@@ -213,10 +177,7 @@ export default class IGApi {
               count: edgeMediaToCommentCount
             },
             is_video,
-            location: {
-              id,
-              name,
-            },
+            location = {},
             taken_at_timestamp,
             viewer_can_reshare,
             viewer_has_liked,
@@ -232,17 +193,14 @@ export default class IGApi {
           mediaPreviewLikeCount,
           edgeMediaToCommentCount,
           is_video,
-          location: {
-            id,
-            name,
-          },
+          location,
           taken_at_timestamp,
           viewer_can_reshare,
           viewer_has_liked,
           viewer_has_saved,
           viewer_has_saved_to_collection,
           viewer_in_photo_of_you,
-        });
+        }, { deep: true });
       }
 
       [curRes] = await Promise.all([
