@@ -1,8 +1,9 @@
 import { Page } from 'puppeteer';
 import Browser from '../../browser';
-import axios from 'axios';
+import camelcase from 'camelcase-keys'
 
 export const timeout = async (ms: number) => new Promise<void>((res) => setTimeout(res, ms));
+
 
 export default class IGApi {
 
@@ -81,47 +82,193 @@ export default class IGApi {
   }
 
   async profileInfo(username: string) {
-    const { data } = await axios.get(`https://www.instagram.com/${username}/?__a=1`);
-    return {
-      'username': data.graphql.user.username,
-      'fullName': data.graphql.user.full_name,
-      'biography': data.graphql.user.biography,
-      'businessCategoryName': data.graphql.user.business_category_name,
-      'followCount': data.graphql.user.edge_follow.count,
-      'followedByCount': data.graphql.user.edge_followed_by.count,
-      'meidaCount': data.graphql.user.edge_owner_to_timeline_media.count,
-      'followedByViewer': data.graphql.user.followed_by_viewer,
-      'followsViewer': data.graphql.user.follows_viewer,
-      'requestedByViewer': data.graphql.user.requested_by_viewer,
-    }
+    await this.sessionPage.goto(`https://www.instagram.com/${username}/`);
+
+    const {
+      entry_data: {
+        ProfilePage: [{
+          graphql: {
+            user
+          }
+        }]
+      }
+    } = await this.sessionPage.evaluate('window._sharedData');
+
+    const {
+      full_name,
+      biography,
+      business_category_name,
+      followed_by_viewer,
+      follows_viewer,
+      has_blocked_viewer,
+      has_requested_viewer,
+      requested_by_viewer,
+      profile_pic_url_hd,
+      edge_follow: {
+        count: followCount,
+      },
+      edge_followed_by: {
+        count: followedByCount,
+      },
+      edge_mutual_followed_by: {
+        count: mutualFollowedByCount,
+      },
+      edge_owner_to_timeline_media: {
+        count: mediaCount,
+      },
+      is_business_account,
+      is_joined_recently,
+      is_private,
+      is_verified,
+    } = user;
+
+    return camelcase({
+      username,
+      full_name,
+      biography,
+      business_category_name,
+      followed_by_viewer,
+      follows_viewer,
+      has_blocked_viewer,
+      has_requested_viewer,
+      requested_by_viewer,
+      profile_pic_url_hd,
+      followCount,
+      followedByCount,
+      mutualFollowedByCount,
+      mediaCount,
+      is_business_account,
+      is_joined_recently,
+      is_private,
+      is_verified,
+    });
   }
 
-  async *profileMedia(username: string) {
-    await this.sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
+  // async *profileMedia(username: string) {
+  //   await this.sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
 
-    const { meidaCount } = await this.profileInfo(username);
-    let curCount = 0;
+  //   const { meidaCount } = await this.profileInfo(username);
+  //   let curCount = 0;
+
+  //   do {
+  //     const rows = await this.sessionPage.$$('article.FyNDV > div > div > div:nth-last-child(-n+8)');
+
+  //     for (const row of rows) {
+  //       for (const item of (await row.$$('div._bz0w'))) {
+  //         const a = await item.$('a');
+  //         const href: string = await (await a!.getProperty('href')).jsonValue();
+  //         const img = await item.$('img');
+  //         const srcset: string = await (await img!.getProperty('srcset')).jsonValue();
+
+  //         let images: any = {};
+  //         srcset.split(',').forEach(str => {
+  //           const split = str.split(' ');
+  //           images[split[1]] = split[0];
+  //         })
+
+  //         yield {
+  //           mediaUri: href,
+  //           images,
+  //         };
+  //       }
+  //     }
+
+  //     await this.sessionPage.evaluate(() => window.scrollTo(0, window.document.body.scrollHeight));
+  //     await timeout(2000);
+
+  //     curCount += rows.length;
+  //   } while (curCount < meidaCount);
+  // }
+
+  async *profileMedia(username: string) {
+    let [curRes] = await Promise.all([
+      this.sessionPage.waitForResponse(res =>
+        res.request().resourceType() === 'xhr' &&
+        res.url().includes('query_hash') &&
+        res.url().includes('first%22%3A12')
+      ),
+      this.sessionPage.goto(`https://www.instagram.com/${username}/`),
+    ]);
 
     do {
-      const rows = await this.sessionPage.$$('article.FyNDV > div > div > div:nth-last-child(-n+8)');
-
-      for (const row of rows) {
-        for (const item of (await row.$$('div._bz0w'))) {
-          const a = await item.$('a');
-          const href = await a!.getProperty('href');
-          const img = await item.$('img');
-          const srcset = await img!.getProperty('srcset');
-          yield {
-            href: await href.jsonValue(),
-            images: await srcset.jsonValue(),
-          };
+      const {
+        data: {
+          user: {
+            edge_owner_to_timeline_media: {
+              edges
+            }
+          }
         }
+      } = await curRes.json();
+
+      for (const edge of edges) {
+        const {
+          node: {
+            display_resources,
+            comments_disabled,
+            edge_media_preview_like: {
+              count: mediaPreviewLikeCount
+            },
+            edge_media_to_comment: {
+              count: edgeMediaToCommentCount
+            },
+            is_video,
+            location: {
+              id,
+              name,
+            },
+            taken_at_timestamp,
+            viewer_can_reshare,
+            viewer_has_liked,
+            viewer_has_saved,
+            viewer_has_saved_to_collection,
+            viewer_in_photo_of_you,
+          }
+        } = edge;
+
+        yield camelcase({
+          display_resources,
+          comments_disabled,
+          mediaPreviewLikeCount,
+          edgeMediaToCommentCount,
+          is_video,
+          location: {
+            id,
+            name,
+          },
+          taken_at_timestamp,
+          viewer_can_reshare,
+          viewer_has_liked,
+          viewer_has_saved,
+          viewer_has_saved_to_collection,
+          viewer_in_photo_of_you,
+        });
       }
 
-      await this.sessionPage.evaluate(() => window.scrollTo(0, window.document.body.scrollHeight));
-      await timeout(2000);
+      [curRes] = await Promise.all([
+        this.sessionPage.waitForResponse(res =>
+          res.request().resourceType() === 'xhr' &&
+          res.url().includes('query_hash') &&
+          res.url().includes('first%22%3A12')
+        ),
+        this.sessionPage.evaluate(() => window.scrollTo(0, window.document.body.scrollHeight))
+      ]);
 
-      curCount += rows.length;
-    } while (curCount < meidaCount);
+      const {
+        data: {
+          user: {
+            edge_owner_to_timeline_media: {
+              page_info: {
+                has_next_page: hasNext
+              }
+            }
+          }
+        }
+      } = await curRes.json();
+
+      if (!hasNext) {
+        break;
+      }
+    } while (true);
   }
 }
