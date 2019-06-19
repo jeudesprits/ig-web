@@ -1,6 +1,5 @@
 import { Page } from 'puppeteer';
 import Browser from '../../browser';
-import camelcase from 'camelcase-keys'
 
 export const timeout = async (ms: number) => new Promise<void>((res) => setTimeout(res, ms));
 
@@ -82,7 +81,7 @@ export default class IGApi {
   }
 
   async profileInfo(username: string) {
-    await this.sessionPage.goto(`https://www.instagram.com/${username}/`);
+    await this.sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
 
     const {
       entry_data: {
@@ -94,120 +93,32 @@ export default class IGApi {
       }
     } = await this.sessionPage.evaluate('window._sharedData');
 
-    const {
-      full_name,
-      biography,
-      business_category_name,
-      followed_by_viewer,
-      follows_viewer,
-      has_blocked_viewer,
-      has_requested_viewer,
-      requested_by_viewer,
-      profile_pic_url_hd,
-      edge_follow: {
-        count: followCount,
-      },
-      edge_followed_by: {
-        count: followedByCount,
-      },
-      edge_mutual_followed_by: {
-        count: mutualFollowedByCount,
-      },
-      edge_owner_to_timeline_media: {
-        count: mediaCount,
-      },
-      is_business_account,
-      is_joined_recently,
-      is_private,
-      is_verified,
-    } = user;
-
-    return camelcase({
-      username,
-      full_name,
-      biography,
-      business_category_name,
-      followed_by_viewer,
-      follows_viewer,
-      has_blocked_viewer,
-      has_requested_viewer,
-      requested_by_viewer,
-      profile_pic_url_hd,
-      followCount,
-      followedByCount,
-      mutualFollowedByCount,
-      mediaCount,
-      is_business_account,
-      is_joined_recently,
-      is_private,
-      is_verified,
-    });
+    return user;
   }
 
   async *profileMedia(username: string) {
-    let [curRes] = await Promise.all([
-      this.sessionPage.waitForResponse(res =>
-        res.request().resourceType() === 'xhr' &&
-        res.url().includes('query_hash') &&
-        res.url().includes('first%22%3A12')
-      ),
-      this.sessionPage.goto(`https://www.instagram.com/${username}/`),
-    ]);
+    await this.sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
 
-    do {
-      const {
-        data: {
-          user: {
-            edge_owner_to_timeline_media: {
-              edges
+    const {
+      entry_data: {
+        ProfilePage: [{
+          graphql: {
+            user: {
+              edge_owner_to_timeline_media
             }
           }
-        }
-      } = await curRes.json();
-
-      for (const edge of edges) {
-        const {
-          node: {
-            display_resources,
-            comments_disabled,
-            edge_media_preview_like: {
-              count: mediaPreviewLikeCount
-            },
-            edge_media_to_comment: {
-              count: edgeMediaToCommentCount
-            },
-            is_video,
-            location = {},
-            taken_at_timestamp,
-            viewer_can_reshare,
-            viewer_has_liked,
-            viewer_has_saved,
-            viewer_has_saved_to_collection,
-            viewer_in_photo_of_you,
-          }
-        } = edge;
-
-        yield camelcase({
-          display_resources,
-          comments_disabled,
-          mediaPreviewLikeCount,
-          edgeMediaToCommentCount,
-          is_video,
-          location,
-          taken_at_timestamp,
-          viewer_can_reshare,
-          viewer_has_liked,
-          viewer_has_saved,
-          viewer_has_saved_to_collection,
-          viewer_in_photo_of_you,
-        }, { deep: true });
+        }]
       }
+    } = await this.sessionPage.evaluate('window._sharedData');
 
-      [curRes] = await Promise.all([
+    let media = edge_owner_to_timeline_media;
+    do {
+      yield media;
+
+      const [res] = await Promise.all([
         this.sessionPage.waitForResponse(res =>
           res.request().resourceType() === 'xhr' &&
-          res.url().includes('query_hash') &&
-          res.url().includes('first%22%3A12')
+          res.url().includes('query_hash')
         ),
         this.sessionPage.evaluate(() => window.scrollTo(0, window.document.body.scrollHeight))
       ]);
@@ -215,18 +126,94 @@ export default class IGApi {
       const {
         data: {
           user: {
-            edge_owner_to_timeline_media: {
-              page_info: {
-                has_next_page: hasNext
-              }
-            }
+            edge_owner_to_timeline_media
           }
         }
-      } = await curRes.json();
+      } = await res.json();
+
+      media = edge_owner_to_timeline_media;
+
+      const {
+        page_info: {
+          has_next_page: hasNext
+        }
+      } = media;
 
       if (!hasNext) {
+        yield media;
         break;
       }
+
+      await this.sessionPage.waitFor(2000);
+    } while (true);
+  }
+
+  async mediaInfo(shortcode: string) {
+    await this.sessionPage.goto(`https://www.instagram.com/p/${shortcode}/`, { waitUntil: 'networkidle0' });
+
+    const {
+      entry_data: {
+        PostPage: [{
+          graphql: {
+            shortcode_media
+          }
+        }]
+      }
+    } = await this.sessionPage.evaluate('window._sharedData');
+
+    return shortcode_media;
+  }
+
+  async * mediaComments(shortcode: string) {
+    await this.sessionPage.goto(`https://www.instagram.com/p/${shortcode}/comments/`, { waitUntil: 'networkidle0' });
+
+    const {
+      entry_data: {
+        MobileAllCommentsPage: [{
+          graphql: {
+            shortcode_media: {
+              edge_media_to_parent_comment
+            }
+          }
+        }]
+      }
+    } = await this.sessionPage.evaluate('window._sharedData');
+
+    let comments = edge_media_to_parent_comment;
+    do {
+      yield comments;
+
+      const [res] = await Promise.all([
+        this.sessionPage.waitForResponse(res =>
+          res.request().resourceType() === 'xhr' &&
+          res.url().includes('query_hash') &&
+          res.url().includes(`shortcode%22%3A%22${shortcode}`),
+        ),
+        this.sessionPage.tap('button.afkep'),
+      ]);
+
+      const {
+        data: {
+          shortcode_media: {
+            edge_media_to_parent_comment
+          }
+        }
+      } = await res.json();
+
+      comments = edge_media_to_parent_comment;
+
+      const {
+        page_info: {
+          has_next_page: hasNext
+        }
+      } = comments;
+
+      if (!hasNext) {
+        yield comments;
+        break;
+      }
+
+      await this.sessionPage.waitFor(2000);
     } while (true);
   }
 }

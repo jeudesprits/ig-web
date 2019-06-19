@@ -7,12 +7,13 @@ import IGApi from './api/ig/login';
   const api = new IGApi();
   await api.prepare();
   await api.logIn('meawira', 'mynewpassword');
-  // console.log(await api.profileMedia('lakrimoca'));
+  // console.log(await api.profileInfo('nude_yogagirl'));
 
-  // await api.menu('activity');
-  for await (const item of api.profileMedia('lakrimoca')) {
-    console.log(item);
+  for await (const comments of api.profileMedia('arielhelwani')) {
+    console.log(comments);
   }
+
+  await Browser.close();
 })();
 
-// https://www.instagram.com/
+// https://www.instagram.com/p/By0t8ooh4Gy/
