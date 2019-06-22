@@ -1,8 +1,9 @@
 import { Page } from 'puppeteer';
 import Browser from '../../browser';
+import axios from 'axios';
+import querystring from 'querystring';
 
 export const timeout = async (ms: number) => new Promise<void>((res) => setTimeout(res, ms));
-
 
 export default class IGApi {
 
@@ -22,9 +23,12 @@ export default class IGApi {
     return this.sessionPage.url().includes('challenge');
   }
 
-  private async closeHomeScreenDialogIfNeeded() {
+  private async closeAnyHomeScreenDialogsIfNeeded() {
     if (await this.sessionPage.$('div.fPMEg')) {
       await this.sessionPage.tap('button.HoLwm');
+    }
+    if (await this.sessionPage.$('section.xZ2Xk button')) {
+      await this.sessionPage.tap('section.xZ2Xk button');
     }
   }
 
@@ -32,7 +36,7 @@ export default class IGApi {
     await this.sessionPage.goto('https://www.instagram.com', { waitUntil: 'networkidle0' });
 
     if (await this.isLoggedIn()) {
-      await this.closeHomeScreenDialogIfNeeded();
+      await this.closeAnyHomeScreenDialogsIfNeeded();
       return;
     }
 
@@ -42,9 +46,11 @@ export default class IGApi {
     const inputs = await this.sessionPage.$$('input.zyHYP');
     await inputs[0].type(username, { delay: 100 });
     await inputs[1].type(password, { delay: 100 });
+
+    const button = (await this.sessionPage.$$('button.L3NKy'))[1];
     await Promise.all([
       this.sessionPage.waitForNavigation({ waitUntil: 'networkidle0' }),
-      this.sessionPage.tap('button.L3NKy'),
+      button.tap(),
     ]);
 
     if (this.isChallengeRequired()) {
@@ -80,8 +86,10 @@ export default class IGApi {
     await timeout(2000);
   }
 
-  async profileInfo(username: string) {
-    await this.sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
+  async profileInfo(username: string, page?: Page) {
+    const currentPage = page ? page : this.sessionPage;
+
+    await currentPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
 
     const {
       entry_data: {
@@ -148,8 +156,10 @@ export default class IGApi {
     } while (true);
   }
 
-  async mediaInfo(shortcode: string) {
-    await this.sessionPage.goto(`https://www.instagram.com/p/${shortcode}/`, { waitUntil: 'networkidle0' });
+  async mediaInfo(shortcode: string, page?: Page) {
+    const currentPage = page ? page : this.sessionPage;
+
+    await currentPage.goto(`https://www.instagram.com/p/${shortcode}/`, { waitUntil: 'networkidle0' });
 
     const {
       entry_data: {
@@ -159,12 +169,12 @@ export default class IGApi {
           }
         }]
       }
-    } = await this.sessionPage.evaluate('window._sharedData');
+    } = await currentPage.evaluate('window._sharedData');
 
     return shortcode_media;
   }
 
-  async * mediaComments(shortcode: string) {
+  async *mediaComments(shortcode: string) {
     await this.sessionPage.goto(`https://www.instagram.com/p/${shortcode}/comments/`, { waitUntil: 'networkidle0' });
 
     const {
@@ -216,4 +226,361 @@ export default class IGApi {
       await this.sessionPage.waitFor(2000);
     } while (true);
   }
+
+
+
+
+  // ***
+
+  async profileIdFromUsername(username: string): Promise<string> {
+    const page = await Browser.newPage();
+    const { id } = await this.profileInfo(username, page);
+    await page.close();
+    return id;
+  }
+
+  async mediaIdFromShortcode(shortcode: string): Promise<string> {
+    const page = await Browser.newPage();
+    const { id } = await this.mediaInfo(shortcode, page);
+    await page.close();
+    return id;
+  }
+
+  async csrfToken() {
+    const cookies = await this.sessionPage.cookies('https://www.instagram.com');
+    const { value } = cookies.find(value => value.name === 'csrftoken')!;
+    return value;
+  }
+
+  async instagramWebFBAppId() {
+    const src = await this.sessionPage.evaluate(() => {
+      const array = [...document.querySelectorAll('script')];
+      return array.find(value => value.src.includes('ConsumerLibCommons.js'))!.src;
+    });
+    const { data } = await axios.get<string>(src);
+    const [, id] = data.match(/instagramWebFBAppId='(.+?)'/)!;
+    return id;
+  }
+
+  async followersQueryHash() {
+    const src = await this.sessionPage.evaluate(() => {
+      const array = [...document.querySelectorAll('script')];
+      return array.find(value => value.src.includes('Consumer.js'))!.src;
+    });
+    const { data } = await axios.get<string>(src);
+    const [, hash] = data.match(/FOLLOW_LIST_REQUEST_FAILED.+?"(.+?)"/)!;
+    return hash;
+  }
+
+  async rolloutHash(): Promise<string> {
+    const { rollout_hash } = await this.sessionPage.evaluate('window._sharedData');
+    return rollout_hash;
+  }
+
+  // ***
+
+  async mediaComment(shortcode: string, text: string, commentId: string = '') {
+    await this.sessionPage.goto(`https://www.instagram.com/p/${shortcode}/comments/`, { waitUntil: 'networkidle0' });
+
+    const uri = `https://www.instagram.com/web/comments/${await this.mediaIdFromShortcode(shortcode)}/add/`;
+    const headers = {
+      'Accept': '*/*',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-Csrftoken': await this.csrfToken(),
+      'X-Ig-App-Id': await this.instagramWebFBAppId(),
+      'X-Instagram-Ajax': await this.rolloutHash(),
+      'X-Requested-With': 'XMLHttpRequest',
+    };
+    const body = `comment_text=${text}&replied_to_comment_id=${commentId}`;
+    const json = await this.sessionPage.evaluate(async (uri, headers, body, shortcode) => {
+      const response = await fetch(uri, {
+        method: 'POST',
+        mode: 'cors',
+        headers: new Headers(headers),
+        body,
+        credentials: 'include',
+        referrer: `https://www.instagram.com/p/${shortcode}/comments/`,
+        referrerPolicy: 'no-referrer-when-downgrade',
+      });
+      if (response.status !== 200) {
+        throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+      }
+      return response.json();
+    }, uri, headers, body, shortcode);
+
+    if (json.status !== 'ok') {
+      throw new Error(`Response status is ${json.status}. Something went wrong.`);
+    }
+
+    return json;
+  }
+
+
+  private async _mediaCommentLikeUnlikeBase(type: 'like' | 'unlike', shortcode: string, commentId: string) {
+    await this.sessionPage.goto(`https://www.instagram.com/p/${shortcode}/comments/`, { waitUntil: 'networkidle0' });
+
+    const uri = `https://www.instagram.com/web/comments/${type}/${commentId}/`;
+    const headers = {
+      'Accept': '*/*',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-Csrftoken': await this.csrfToken(),
+      'X-Ig-App-Id': await this.instagramWebFBAppId(),
+      'X-Instagram-Ajax': await this.rolloutHash(),
+      'X-Requested-With': 'XMLHttpRequest',
+    };
+    const json = await this.sessionPage.evaluate(async (uri, headers, shortcode) => {
+      const response = await fetch(uri, {
+        method: 'POST',
+        mode: 'cors',
+        headers: new Headers(headers),
+        credentials: 'include',
+        referrer: `https://www.instagram.com/p/${shortcode}/comments/`,
+        referrerPolicy: 'no-referrer-when-downgrade',
+      });
+      if (response.status !== 200) {
+        throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+      }
+      return response.json();
+    }, uri, headers, shortcode);
+
+    if (json.status !== 'ok') {
+      throw new Error(`Response status is ${json.status}. Something went wrong.`);
+    }
+
+    return json;
+  }
+
+  async mediaCommentLike(shortcode: string, commentId: string) {
+    return this._mediaCommentLikeUnlikeBase('like', shortcode, commentId);
+  }
+
+  async mediaCommentUnlike(shortcode: string, commentId: string) {
+    return this._mediaCommentLikeUnlikeBase('unlike', shortcode, commentId);
+  }
+
+  async mediaCommentSpamReport(shortcode: string, commentId: string) {
+    await this.sessionPage.goto(`https://www.instagram.com/p/${shortcode}/comments/`, { waitUntil: 'networkidle0' });
+
+    const uri = `https://www.instagram.com/media/${await this.mediaIdFromShortcode(shortcode)}/comment/${commentId}/flag/`;
+    const headers = {
+      'Accept': '*/*',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-Csrftoken': await this.csrfToken(),
+      'X-Ig-App-Id': await this.instagramWebFBAppId(),
+      'X-Instagram-Ajax': await this.rolloutHash(),
+      'X-Requested-With': 'XMLHttpRequest',
+    };
+    const body = 'reason_id=1';
+    const json = await this.sessionPage.evaluate(async (uri, headers, body, shortcode) => {
+      const response = await fetch(uri, {
+        method: 'POST',
+        mode: 'cors',
+        headers: new Headers(headers),
+        body,
+        credentials: 'include',
+        referrer: `https://www.instagram.com/p/${shortcode}/comments/`,
+        referrerPolicy: 'no-referrer-when-downgrade',
+      });
+      if (response.status !== 200) {
+        throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+      }
+      return response.json();
+    }, uri, headers, body, shortcode);
+
+    if (json.status !== 'ok') {
+      throw new Error(`Response status is ${json.status}. Something went wrong.`);
+    }
+
+    return json;
+  }
+
+  async mediaCommentDelete(shortcode: string, commentId: string) {
+    await this.sessionPage.goto(`https://www.instagram.com/p/${shortcode}/comments/`, { waitUntil: 'networkidle0' });
+
+    const uri = `https://www.instagram.com/web/comments/${await this.mediaIdFromShortcode(shortcode)}/delete/${commentId}/`;
+    const headers = {
+      'Accept': '*/*',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-Csrftoken': await this.csrfToken(),
+      'X-Ig-App-Id': await this.instagramWebFBAppId(),
+      'X-Instagram-Ajax': await this.rolloutHash(),
+      'X-Requested-With': 'XMLHttpRequest',
+    };
+    const json = await this.sessionPage.evaluate(async (uri, headers, shortcode) => {
+      const response = await fetch(uri, {
+        method: 'POST',
+        mode: 'cors',
+        headers: new Headers(headers),
+        credentials: 'include',
+        referrer: `https://www.instagram.com/p/${shortcode}/comments/`,
+        referrerPolicy: 'no-referrer-when-downgrade',
+      });
+      if (response.status !== 200) {
+        throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+      }
+      return response.json();
+    }, uri, headers, shortcode);
+
+    if (json.status !== 'ok') {
+      throw new Error(`Response status is ${json.status}. Something went wrong.`);
+    }
+
+    return json;
+  }
+
+
+  private async _mediaLikeUnlikeBase(type: 'like' | 'unlike', shortcode: string) {
+    await this.sessionPage.goto(`https://www.instagram.com/p/${shortcode}/`, { waitUntil: 'networkidle0' });
+
+    const $span = await this.sessionPage.$('span.fr66n > button.afkep > span');
+    if (await this.sessionPage.evaluate((span, type) =>
+      span.attributes['aria-label'].textContent !== `${type.charAt(0).toUpperCase()}${type.slice(1)}`
+      , $span, type)) {
+      throw new Error(`Can't ${type} ${type}d post.`);
+    }
+
+    const [response] = await Promise.all([
+      this.sessionPage.waitForResponse(response =>
+        response.url().includes('/like/') || response.url().includes('/unlike/')
+      ),
+      $span!.tap(),
+    ]);
+    if (response.status() === 400) {
+      throw new Error('You’re Temporarily Blocked.');
+    }
+    if (response.status() !== 200) {
+      throw new Error(`Response code is ${response.statusText}. Something went wrong.`)
+    }
+
+    return response.json();
+  }
+
+  async mediaLike(shortcode: string) {
+    return this._mediaLikeUnlikeBase('like', shortcode);
+  }
+
+  async mediaUnlike(shortcode: string) {
+    return this._mediaLikeUnlikeBase('unlike', shortcode);
+  }
+
+
+  async profileSpamReport(username: string) {
+    await this.sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
+
+    const uri = `https://www.instagram.com/users/${await this.profileIdFromUsername(username)}/report/`;
+    const headers = {
+      'Accept': '*/*',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-Csrftoken': await this.csrfToken(),
+      'X-Ig-App-Id': await this.instagramWebFBAppId(),
+      'X-Instagram-Ajax': await this.rolloutHash(),
+      'X-Requested-With': 'XMLHttpRequest',
+    };
+    const body = 'source_name=profile&reason_id=1';
+    const json = await this.sessionPage.evaluate(async (uri, headers, body, username) => {
+      const response = await fetch(uri, {
+        method: 'POST',
+        mode: 'cors',
+        headers: new Headers(headers),
+        body,
+        credentials: 'include',
+        referrer: `https://www.instagram.com/${username}/`,
+        referrerPolicy: 'no-referrer-when-downgrade',
+      });
+      if (response.status !== 200) {
+        throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+      }
+      return response.json();
+    }, uri, headers, body, username);
+
+    if (json.status !== 'ok') {
+      throw new Error(`Response status is ${json.status}. Something went wrong.`);
+    }
+
+    return json;
+  }
+
+  async mediaSpamReport(shortcode: string) {
+    await this.sessionPage.goto(`https://www.instagram.com/p/${shortcode}/`, { waitUntil: 'networkidle0' });
+
+    const uri = `https://www.instagram.com/media/${await this.mediaIdFromShortcode(shortcode)}/flag/`;
+    const headers = {
+      'Accept': '*/*',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-Csrftoken': await this.csrfToken(),
+      'X-Ig-App-Id': await this.instagramWebFBAppId(),
+      'X-Instagram-Ajax': await this.rolloutHash(),
+      'X-Requested-With': 'XMLHttpRequest',
+    };
+    const body = 'reason_id=1';
+    const json = await this.sessionPage.evaluate(async (uri, headers, body, shortcode) => {
+      const response = await fetch(uri, {
+        method: 'POST',
+        mode: 'cors',
+        headers: new Headers(headers),
+        body,
+        credentials: 'include',
+        referrer: `https://www.instagram.com/p/${shortcode}/`,
+        referrerPolicy: 'no-referrer-when-downgrade',
+      });
+      if (response.status !== 200) {
+        throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+      }
+      return response.json();
+    }, uri, headers, body, shortcode);
+
+    if (json.status !== 'ok') {
+      throw new Error(`Response status is ${json.status}. Something went wrong.`);
+    }
+
+    return json;
+  }
+
+  async *profileFollowers(username: string, cursor?: string) {
+    await this.sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
+
+    const uriComponents = {
+      'query_hash': await this.followersQueryHash(),
+      'variables': `{"id":"${await this.profileIdFromUsername(username)}","include_reel":true,"fetch_mutual":true,"first":24}`,
+    };
+    const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}/`;
+    const headers = {
+      'Accept': '*/*',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'X-Csrftoken': await this.csrfToken(),
+      'X-Ig-App-Id': await this.instagramWebFBAppId(),
+      'X-Instagram-Ajax': await this.rolloutHash(),
+      'X-Requested-With': 'XMLHttpRequest',
+    };
+    const json = await this.sessionPage.evaluate(async (uri, headers, username) => {
+      const response = await fetch(uri, {
+        method: 'GET',
+        mode: 'cors',
+        headers: new Headers(headers),
+        credentials: 'include',
+        referrer: `https://www.instagram.com/${username}/followers/`,
+        referrerPolicy: 'no-referrer-when-downgrade',
+      });
+      if (response.status !== 200) {
+        throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+      }
+      return response.json();
+    }, uri, headers, username);
+
+    if (json.status !== 'ok') {
+      throw new Error(`Response status is ${json.status}. Something went wrong.`);
+    }
+
+    yield json;
+  }
+
+
+
 }
+

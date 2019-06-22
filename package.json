@@ -36,22 +36,22 @@
     "dotenv-safe": "^6.1.0",
     "express": "^4.17.1",
     "mongodb": "^3.2.7",
-    "puppeteer": "^1.17.0",
+    "puppeteer": "^1.18.0",
     "winston": "^3.2.1",
     "winston-callback": "^3.0.4",
-    "winston-telegram": "^2.0.1"
+    "winston-telegram": "^2.1.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.5",
     "@types/dotenv-safe": "^5.0.3",
     "@types/express": "^4.17.0",
     "@types/mongodb": "^3.1.28",
-    "@types/node": "^12.0.8",
+    "@types/node": "^12.0.10",
     "@types/puppeteer": "^1.12.4",
     "concurrently": "^4.1.0",
     "nodemon": "^1.19.1",
     "prettier": "^1.18.2",
-    "tslint": "^5.17.0",
+    "tslint": "^5.18.0",
     "tslint-config-prettier": "^1.18.0",
     "tslint-config-standard": "^8.0.1",
     "typescript": "^3.5.2"
