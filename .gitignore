@@ -1,13 +1,3 @@
-lib-cov
-*.seed
-*.log
-*.csv
-*.dat
-*.out
-*.pid
-*.gz
-*.swp
-
 pids
 logs
 results
@@ -36,3 +26,6 @@ Thumbs.db
 
 # Ignore built ts files
 dist/**/*
+
+# Ignore Chrome files
+chromium

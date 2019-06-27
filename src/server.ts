@@ -6,9 +6,8 @@ import IGApi from './api/ig/login';
   await Browser.launch();
   const api = new IGApi();
   await api.prepare();
-  await api.logIn('meawira', 'mynewpassword');
-
-
+  await api.logIn('jeudesprits', 'rj2119942104sl');
+  console.log(await api.uploadMedia('test test', '/Users/jeudesprits/Downloads/D8KyZwOWsAAlkUa.jpg-large.jpeg'));
 
   // await Browser.close();
 })();
