@@ -1,0 +1,10 @@
+// See https://aka.ms/vscode-remote/devcontainer.json for format details.
+{
+	"name": "IG-WEB",
+	"dockerFile": "../Dockerfile",
+	"context": "..",
+	"appPort": 2121,
+	"extensions": [
+		"ms-vscode.vscode-typescript-tslint-plugin"
+	]
+}

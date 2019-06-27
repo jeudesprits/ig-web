@@ -1,0 +1,11 @@
+.vscode
+.devcontainer
+node_modules
+dist
+chromium
+.gitignore
+.gitattributes
+.env
+.dockerignore
+README.md
+LICENSE
