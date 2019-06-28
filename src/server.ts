@@ -32,11 +32,9 @@ async function msleep(time: number): Promise<void> {
 
       try {
         ++count;
-        console.log(username, count);
-        await api.profileUnfollow(username);
+        console.log(await api.profileUnfollow(username));
       } catch {
         console.log("Oops...");
-        --count;
       }
 
       await msleep(2000);
