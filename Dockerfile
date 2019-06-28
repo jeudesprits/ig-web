@@ -1,6 +1,5 @@
 FROM node:slim
 
-# Configure apt and install packages
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
   && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
   && apt-get update \
@@ -11,12 +10,10 @@ RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key
 
 WORKDIR /usr/src/app
 
-# Install node dependencies
 COPY package*.json ./
+
 RUN npm install --production --silent
 
-# Copy project files
 COPY . .
 
-# Open port
 EXPOSE 2121

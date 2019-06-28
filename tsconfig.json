@@ -10,12 +10,14 @@
     ],
     "outDir": "dist",
     "removeComments": true,
+    "incremental": true,
     /* Strict Type-Checking Options */
     "noImplicitAny": true,
     "noImplicitThis": true,
     "alwaysStrict": true,
     "strictBindCallApply": true,
     "strictNullChecks": true,
+    "pretty": true,
     /* Additional Checks */
     "noImplicitReturns": true,
     "noUnusedLocals": true,
@@ -34,5 +36,5 @@
   },
   "include": [
     "src/**/*"
-  ]
+  ],
 }

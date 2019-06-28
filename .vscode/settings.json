@@ -1,0 +1,15 @@
+{
+  "explorer.sortOrder": "type",
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/chromium": true,
+  },
+  "tslint.exclude": [
+    "**/node_modules/**/*",
+    "**/dist/**/*",
+    "**/chromium/**/*"
+  ],
+  "resmon.show.battery": false,
+  "resmon.show.cpufreq": false
+}

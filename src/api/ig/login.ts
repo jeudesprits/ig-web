@@ -31,7 +31,7 @@ export default class IGApi {
   }
 
   async logIn(username: string, password: string) {
-    await this.sessionPage.goto('https://www.instagram.com', { waitUntil: 'networkidle0' });
+    await this.sessionPage.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
 
     if (await this.isLoggedIn()) {
       await this.closeAnyHomeScreenDialogsIfNeeded();

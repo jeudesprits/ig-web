@@ -9,12 +9,10 @@ export default class Browser {
       args: [
         '--no-sandbox',
         '--disable-dev-shm-usage',
-        // '--disable-setuid-sandbox',
-        // '--disable-site-isolation-trials',
-        // '--disable-features=NetworkService',
+        '--disable-features=NetworkService',
         '--user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 12_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1.1 Mobile/15E148 Safari/604.1',
       ],
-      headless: true,
+      headless: false,
       userDataDir: 'chromium',
       defaultViewport: {
         width: 414,
