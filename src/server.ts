@@ -26,7 +26,7 @@ async function msleep(time: number): Promise<void> {
     } = data;
 
     loop2: for (const { node: { username } } of edges) {
-      if (count > 15) {
+      if (count >= 15) {
         break loop1;
       }
 

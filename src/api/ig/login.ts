@@ -2,6 +2,7 @@ import { Page, ElementHandle } from 'puppeteer';
 import Browser from '../../browser';
 import axios from 'axios';
 import querystring from 'querystring';
+import { question } from 'readline-sync';
 
 export default class IGApi {
 
@@ -60,7 +61,15 @@ export default class IGApi {
     ]);
 
     if (this.isChallengeRequired()) {
-      console.log('Boom!');
+      const $sendButton = await this.sessionPage.waitForSelector('form.JraEb  button');
+      await $sendButton.tap();
+
+      const $codeInput = await this.sessionPage.waitForSelector('input');
+      const code = question('Enter Your Security Code: ');
+      await $codeInput.type(code, { delay: 100 });
+
+      const $submitButton = await this.sessionPage.$('form.JraEb  button');
+      await $submitButton!.tap();
     }
   }
 
@@ -110,7 +119,7 @@ export default class IGApi {
     return user;
   }
 
-  async *profileMedia(username: string) {
+  async * profileMedia(username: string) {
     await this.sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
 
     const {
@@ -180,7 +189,7 @@ export default class IGApi {
     return shortcode_media;
   }
 
-  async *mediaComments(shortcode: string) {
+  async * mediaComments(shortcode: string) {
     await this.sessionPage.goto(`https://www.instagram.com/p/${shortcode}/comments/`, { waitUntil: 'networkidle0' });
 
     const {
@@ -599,7 +608,7 @@ export default class IGApi {
   }
 
 
-  private async *_profileFollowersBase(type: 'after' | 'before', username: string, cursor: string) {
+  private async * _profileFollowersBase(type: 'after' | 'before', username: string, cursor: string) {
     let json;
     let currentCursor = cursor;
 
@@ -669,7 +678,7 @@ export default class IGApi {
     } while (true);
   }
 
-  async *profileFollowersAfter(username: string, cursor: string) {
+  async * profileFollowersAfter(username: string, cursor: string) {
     if (this.sessionPage.url() !== `https://www.instagram.com/${username}/`) {
       await this.sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
     }
@@ -742,7 +751,7 @@ export default class IGApi {
   }
 
 
-  private async *_profileFollowingBase(type: 'after' | 'before', username: string, cursor: string) {
+  private async * _profileFollowingBase(type: 'after' | 'before', username: string, cursor: string) {
     let json;
     let currentCursor = cursor;
 
@@ -812,7 +821,7 @@ export default class IGApi {
     } while (true);
   }
 
-  async *profileFollowingAfter(username: string, cursor: string) {
+  async * profileFollowingAfter(username: string, cursor: string) {
     if (this.sessionPage.url() !== `https://www.instagram.com/${username}/`) {
       await this.sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
     }
@@ -829,7 +838,7 @@ export default class IGApi {
     return value;
   }
 
-  async *profileFollowing(username: string) {
+  async * profileFollowing(username: string) {
     await this.sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
 
     const uriComponents = {
@@ -975,7 +984,7 @@ export default class IGApi {
     return json;
   }
 
-  private async *_feedBase(cursor: string) {
+  private async * _feedBase(cursor: string) {
     let json;
     let currentCursor = cursor;
 
@@ -1041,7 +1050,7 @@ export default class IGApi {
     } while (true);
   }
 
-  async *feed() {
+  async * feed() {
     await this.sessionPage.goto(`https://www.instagram.com/`, { waitUntil: 'networkidle0' });
 
     const { feed } = await this.sessionPage.evaluate('window.__additionalData');
@@ -1066,7 +1075,7 @@ export default class IGApi {
     }
   }
 
-  private async *_discoverBase(cursor: string) {
+  private async * _discoverBase(cursor: string) {
     let json;
     let currentCursor = cursor;
 
@@ -1131,7 +1140,7 @@ export default class IGApi {
     } while (true);
   }
 
-  async *discoverFeed() {
+  async * discoverFeed() {
     await this.sessionPage.goto('https://www.instagram.com/explore/', { waitUntil: 'networkidle0' });
 
     const uriComponents = {
@@ -1184,7 +1193,7 @@ export default class IGApi {
     }
   }
 
-  private async *_discoverChainingBase(shortcode: string, cursor: string) {
+  private async * _discoverChainingBase(shortcode: string, cursor: string) {
     let json;
     let currentCursor = cursor;
 
@@ -1249,7 +1258,7 @@ export default class IGApi {
     } while (true);
   }
 
-  async *discoverChaining(shortcode: string) {
+  async * discoverChaining(shortcode: string) {
     await this.sessionPage.goto(`https://www.instagram.com/p/${shortcode}/?chaining=true`, { waitUntil: 'networkidle0' });
 
     const uriComponents = {

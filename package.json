@@ -38,6 +38,7 @@
     "mongodb": "^3.2.7",
     "node-cron": "^2.0.3",
     "puppeteer": "^1.18.1",
+    "readline-sync": "^1.4.9",
     "winston": "^3.2.1",
     "winston-callback": "^3.0.4",
     "winston-telegram": "^2.1.0"
@@ -50,6 +51,7 @@
     "@types/node": "^12.0.10",
     "@types/node-cron": "^2.0.2",
     "@types/puppeteer": "^1.12.4",
+    "@types/readline-sync": "^1.4.3",
     "concurrently": "^4.1.1",
     "nodemon": "^1.19.1",
     "prettier": "^1.18.2",
