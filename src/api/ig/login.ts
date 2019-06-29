@@ -64,12 +64,12 @@ export default class IGApi {
       const $sendButton = await this.sessionPage.waitForSelector('form.JraEb  button');
       await $sendButton.tap();
 
-      const $codeInput = await this.sessionPage.waitForSelector('input');
+      const $codeInput = await this.sessionPage.waitForSelector('input[name=security_code]');
       const code = question('Enter Your Security Code: ');
       await $codeInput.type(code, { delay: 100 });
 
-      const $submitButton = await this.sessionPage.$('form.JraEb  button');
-      await $submitButton!.tap();
+      const $submitButton = await this.sessionPage.waitForSelector('form.JraEb  button');
+      await $submitButton.tap();
     }
   }
 
