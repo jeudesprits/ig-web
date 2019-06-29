@@ -1,8 +1,6 @@
 FROM node:slim
 
-RUN mkdir /workspace
-
-WORKDIR /workspace
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
   && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
@@ -15,5 +13,7 @@ RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key
   && apt-get autoremove -y \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/*
+
+ENV DEBIAN_FRONTEND=dialog
 
 CMD ["/bin/zsh"]

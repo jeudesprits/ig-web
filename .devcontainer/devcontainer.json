@@ -1,8 +1,6 @@
 {
 	"name": "ig-web",
-	"dockerComposeFile": "docker-compose.yml",
-	"service": "app",
-	"workspaceFolder": "/workspace",
+	"dockerFile": "Dockerfile",
 	"postCreateCommand": "npm install",
 	"extensions": [
 		"ms-vscode.vscode-typescript-tslint-plugin",
