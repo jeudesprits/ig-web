@@ -3,7 +3,7 @@ import FormData from 'form-data';
 import fetch from 'node-fetch';
 import fs from 'fs';
 
-interface TelegramTranportsOptions extends Transport.TransportStreamOptions {
+interface TelegramTransportOptions extends Transport.TransportStreamOptions {
   token: string
   chatId: string
   pathToImage: string
@@ -17,7 +17,7 @@ export class TelegramTransport extends Transport {
 
   private pathToImage: string
 
-  constructor(options: TelegramTranportsOptions) {
+  constructor(options: TelegramTransportOptions) {
     super(options);
 
     this.token = options.token;
