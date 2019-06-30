@@ -1,7 +1,7 @@
 import Transport from 'winston-transport';
 import FormData from 'form-data';
 import fetch from 'node-fetch';
-import fs from 'fs';
+import { createReadStream, existsSync } from 'fs';
 
 interface TelegramTransportOptions extends Transport.TransportStreamOptions {
   token: string
@@ -44,7 +44,7 @@ export class TelegramTransport extends Transport {
   }
 
   private async sendImage() {
-    const imageStream = fs.createReadStream(this.pathToImage);
+    const imageStream = createReadStream(this.pathToImage);
 
     const formData = new FormData();
     formData.append('chat_id', this.chatId);
@@ -71,7 +71,7 @@ export class TelegramTransport extends Transport {
 
     this.sendText(info[Symbol.for('message')])
       .then(() => {
-        if (fs.existsSync(this.pathToImage)) {
+        if (existsSync(this.pathToImage)) {
           return this.sendImage();
         }
         return;
