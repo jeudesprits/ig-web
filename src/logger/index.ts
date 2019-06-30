@@ -10,7 +10,7 @@ const myFormat = printf(({ level, message, label, timestamp }) => {
 });
 
 const logger = createLogger({
-  level: isProduction ? 'info' : 'debug',
+  level: isProduction() ? 'info' : 'debug',
   format: combine(
     label({ label: 'ig-web' }),
     timestamp(),
