@@ -6,7 +6,7 @@ import { question } from 'readline-sync';
 
 export default class IGApi {
 
-  private sessionPage: Page;
+  readonly sessionPage: Page;
 
   async prepare() {
     this.sessionPage = await Browser.newPage();

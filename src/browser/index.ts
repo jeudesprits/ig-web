@@ -39,4 +39,12 @@ export default class Browser {
   static async close() {
     return this.browser.close();
   }
+
+  static async screenshot(page: puppeteer.Page, path: string) {
+    await page.screenshot({
+      path,
+      type: 'jpeg',
+      fullPage: true,
+    });
+  }
 }
