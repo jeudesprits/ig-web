@@ -6,51 +6,55 @@ import { question } from 'readline-sync';
 
 export default class IGApi {
 
-  readonly sessionPage: Page;
+  private _sessionPage: Page;
+
+  get sessionPage() {
+    return this._sessionPage;
+  }
 
   async prepare() {
-    this.sessionPage = await Browser.newPage();
+    this._sessionPage = await Browser.newPage();
   }
 
   // Login actions
 
   private async isLoggedIn() {
-    const html = await this.sessionPage.$('html');
-    const isNotLoggedIn: boolean = await this.sessionPage.evaluate(html => html.classList.contains('not-logged-in'), html);
+    const html = await this._sessionPage.$('html');
+    const isNotLoggedIn: boolean = await this._sessionPage.evaluate(html => html.classList.contains('not-logged-in'), html);
     return !isNotLoggedIn
   }
 
   private isChallengeRequired() {
-    return this.sessionPage.url().includes('challenge');
+    return this._sessionPage.url().includes('challenge');
   }
 
   private async closeAnyHomeScreenDialogsIfNeeded() {
-    if (await this.sessionPage.$('div.fPMEg')) {
-      await this.sessionPage.tap('button.HoLwm');
+    if (await this._sessionPage.$('div.fPMEg')) {
+      await this._sessionPage.tap('button.HoLwm');
     }
-    if (await this.sessionPage.$('section.xZ2Xk button')) {
-      await this.sessionPage.tap('section.xZ2Xk button');
+    if (await this._sessionPage.$('section.xZ2Xk button')) {
+      await this._sessionPage.tap('section.xZ2Xk button');
     }
   }
 
   async logIn(username: string, password: string) {
-    await this.sessionPage.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
+    await this._sessionPage.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
 
     if (await this.isLoggedIn()) {
       await this.closeAnyHomeScreenDialogsIfNeeded();
       return;
     }
 
-    await this.sessionPage.tap('button.L3NKy');
-    await this.sessionPage.waitFor(2000);
+    await this._sessionPage.tap('button.L3NKy');
+    await this._sessionPage.waitFor(2000);
 
-    const inputs = await this.sessionPage.$$('input.zyHYP');
+    const inputs = await this._sessionPage.$$('input.zyHYP');
     await inputs[0].type(username, { delay: 100 });
     await inputs[1].type(password, { delay: 100 });
 
     let $button: ElementHandle<Element> | null = null;
-    for (const $element of (await this.sessionPage.$$('button.L3NKy'))) {
-      const textContent: string = await this.sessionPage.evaluate(element => element.textContent, $element)
+    for (const $element of (await this._sessionPage.$$('button.L3NKy'))) {
+      const textContent: string = await this._sessionPage.evaluate(element => element.textContent, $element)
       if (textContent === 'Log In') {
         $button = $element;
         break;
@@ -58,19 +62,19 @@ export default class IGApi {
     }
 
     await Promise.all([
-      this.sessionPage.waitForNavigation({ waitUntil: 'networkidle0' }),
+      this._sessionPage.waitForNavigation({ waitUntil: 'networkidle0' }),
       $button!.tap(),
     ]);
 
     if (this.isChallengeRequired()) {
-      const $sendButton = await this.sessionPage.waitForSelector('form.JraEb  button');
+      const $sendButton = await this._sessionPage.waitForSelector('form.JraEb  button');
       await $sendButton.tap();
 
-      const $codeInput = await this.sessionPage.waitForSelector('input[name=security_code]');
+      const $codeInput = await this._sessionPage.waitForSelector('input[name=security_code]');
       const code = question('Enter Your Security Code: ');
       await $codeInput.type(code, { delay: 100 });
 
-      const $submitButton = await this.sessionPage.waitForSelector('form.JraEb  button');
+      const $submitButton = await this._sessionPage.waitForSelector('form.JraEb  button');
       await $submitButton.tap();
     }
   }
@@ -78,7 +82,7 @@ export default class IGApi {
   // Menu
 
   async menu(section: 'home' | 'explore' | 'upload' | 'activity' | 'profile') {
-    const menu = await this.sessionPage.$$('div.q02Nz');
+    const menu = await this._sessionPage.$$('div.q02Nz');
 
     if (menu.length === 0) {
       return;
@@ -102,13 +106,13 @@ export default class IGApi {
         break;
     }
 
-    await this.sessionPage.waitFor(2000);
+    await this._sessionPage.waitFor(2000);
   }
 
   // Profile actions
 
   async profileInfo(username: string, page?: Page) {
-    const currentPage = page ? page : this.sessionPage;
+    const currentPage = page ? page : this._sessionPage;
 
     await currentPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
 
@@ -126,7 +130,7 @@ export default class IGApi {
   }
 
   async * profileMedia(username: string) {
-    await this.sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
+    await this._sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
 
     const {
       entry_data: {
@@ -138,18 +142,18 @@ export default class IGApi {
           }
         }]
       }
-    } = await this.sessionPage.evaluate('window._sharedData');
+    } = await this._sessionPage.evaluate('window._sharedData');
 
     let media = edge_owner_to_timeline_media;
     do {
       yield media;
 
       const [res] = await Promise.all([
-        this.sessionPage.waitForResponse(res =>
+        this._sessionPage.waitForResponse(res =>
           res.request().resourceType() === 'xhr' &&
           res.url().includes('query_hash')
         ),
-        this.sessionPage.evaluate(() => window.scrollTo(0, window.document.body.scrollHeight))
+        this._sessionPage.evaluate(() => window.scrollTo(0, window.document.body.scrollHeight))
       ]);
 
       const {
@@ -173,7 +177,7 @@ export default class IGApi {
         break;
       }
 
-      await this.sessionPage.waitFor(2000);
+      await this._sessionPage.waitFor(2000);
     } while (true);
   }
 
@@ -200,7 +204,7 @@ export default class IGApi {
         'variables': baseUriComponents.variables + `"${type}":"${currentCursor}"}`,
       };
       const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
-      json = await this.sessionPage.evaluate(async (uri, headers, username) => {
+      json = await this._sessionPage.evaluate(async (uri, headers, username) => {
         const response = await window.fetch(uri, {
           method: 'GET',
           mode: 'cors',
@@ -243,21 +247,21 @@ export default class IGApi {
 
       currentCursor = newCursor;
 
-      await this.sessionPage.waitFor(2000);
+      await this._sessionPage.waitFor(2000);
     } while (true);
   }
 
   async * profileFollowersAfter(username: string, cursor: string) {
-    if (this.sessionPage.url() !== `https://www.instagram.com/${username}/`) {
-      await this.sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
+    if (this._sessionPage.url() !== `https://www.instagram.com/${username}/`) {
+      await this._sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
     }
 
     yield* this._profileFollowersBase('after', username, cursor);
   }
 
   async profileFollowersBefore(username: string, cursor: string) {
-    if (this.sessionPage.url() !== `https://www.instagram.com/${username}/`) {
-      await this.sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
+    if (this._sessionPage.url() !== `https://www.instagram.com/${username}/`) {
+      await this._sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
     }
 
     const { value } = await this._profileFollowersBase('before', username, cursor).next();
@@ -265,7 +269,7 @@ export default class IGApi {
   }
 
   async * profileFollowers(username: string) {
-    await this.sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
+    await this._sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
 
     const uriComponents = {
       'query_hash': await this.followersQueryHash(),
@@ -280,7 +284,7 @@ export default class IGApi {
       'X-Instagram-Ajax': await this.rolloutHash(),
       'X-Requested-With': 'XMLHttpRequest',
     };
-    const json = await this.sessionPage.evaluate(async (uri, headers, username) => {
+    const json = await this._sessionPage.evaluate(async (uri, headers, username) => {
       const response = await window.fetch(uri, {
         method: 'GET',
         mode: 'cors',
@@ -342,7 +346,7 @@ export default class IGApi {
         'variables': baseUriComponents.variables + `"${type}":"${currentCursor}"}`,
       };
       const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
-      json = await this.sessionPage.evaluate(async (uri, headers, username) => {
+      json = await this._sessionPage.evaluate(async (uri, headers, username) => {
         const response = await window.fetch(uri, {
           method: 'GET',
           mode: 'cors',
@@ -385,21 +389,21 @@ export default class IGApi {
 
       currentCursor = newCursor;
 
-      await this.sessionPage.waitFor(2000);
+      await this._sessionPage.waitFor(2000);
     } while (true);
   }
 
   async * profileFollowingAfter(username: string, cursor: string) {
-    if (this.sessionPage.url() !== `https://www.instagram.com/${username}/`) {
-      await this.sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
+    if (this._sessionPage.url() !== `https://www.instagram.com/${username}/`) {
+      await this._sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
     }
 
     yield* this._profileFollowingBase('after', username, cursor);
   }
 
   async profileFollowingBefore(username: string, cursor: string) {
-    if (this.sessionPage.url() !== `https://www.instagram.com/${username}/`) {
-      await this.sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
+    if (this._sessionPage.url() !== `https://www.instagram.com/${username}/`) {
+      await this._sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
     }
 
     const { value } = await this._profileFollowingBase('before', username, cursor).next();
@@ -407,7 +411,7 @@ export default class IGApi {
   }
 
   async * profileFollowing(username: string) {
-    await this.sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
+    await this._sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
 
     const uriComponents = {
       'query_hash': await this.followingQueryHash(),
@@ -422,7 +426,7 @@ export default class IGApi {
       'X-Instagram-Ajax': await this.rolloutHash(),
       'X-Requested-With': 'XMLHttpRequest',
     };
-    const json = await this.sessionPage.evaluate(async (uri, headers, username) => {
+    const json = await this._sessionPage.evaluate(async (uri, headers, username) => {
       const response = await window.fetch(uri, {
         method: 'GET',
         mode: 'cors',
@@ -487,7 +491,7 @@ export default class IGApi {
       'X-Requested-With': 'XMLHttpRequest',
     };
     const uri = `https://www.instagram.com/web/friendships/${id}/${type}/`;
-    const json = await this.sessionPage.evaluate(async (uri, headers, username) => {
+    const json = await this._sessionPage.evaluate(async (uri, headers, username) => {
       const response = await window.fetch(uri, {
         method: 'POST',
         mode: 'cors',
@@ -520,7 +524,7 @@ export default class IGApi {
   // Media actions
 
   async mediaInfo(shortcode: string, page?: Page) {
-    const currentPage = page ? page : this.sessionPage;
+    const currentPage = page ? page : this._sessionPage;
 
     await currentPage.goto(`https://www.instagram.com/p/${shortcode}/`, { waitUntil: 'networkidle0' });
 
@@ -538,7 +542,7 @@ export default class IGApi {
   }
 
   async * mediaComments(shortcode: string) {
-    await this.sessionPage.goto(`https://www.instagram.com/p/${shortcode}/comments/`, { waitUntil: 'networkidle0' });
+    await this._sessionPage.goto(`https://www.instagram.com/p/${shortcode}/comments/`, { waitUntil: 'networkidle0' });
 
     const {
       entry_data: {
@@ -550,19 +554,19 @@ export default class IGApi {
           }
         }]
       }
-    } = await this.sessionPage.evaluate('window._sharedData');
+    } = await this._sessionPage.evaluate('window._sharedData');
 
     let comments = edge_media_to_parent_comment;
     do {
       yield comments;
 
       const [res] = await Promise.all([
-        this.sessionPage.waitForResponse(res =>
+        this._sessionPage.waitForResponse(res =>
           res.request().resourceType() === 'xhr' &&
           res.url().includes('query_hash') &&
           res.url().includes(`shortcode%22%3A%22${shortcode}`),
         ),
-        this.sessionPage.tap('button.afkep'),
+        this._sessionPage.tap('button.afkep'),
       ]);
 
       const {
@@ -586,12 +590,12 @@ export default class IGApi {
         break;
       }
 
-      await this.sessionPage.waitFor(2000);
+      await this._sessionPage.waitFor(2000);
     } while (true);
   }
 
   async mediaComment(shortcode: string, text: string, commentId: string = '') {
-    await this.sessionPage.goto(`https://www.instagram.com/p/${shortcode}/comments/`, { waitUntil: 'networkidle0' });
+    await this._sessionPage.goto(`https://www.instagram.com/p/${shortcode}/comments/`, { waitUntil: 'networkidle0' });
 
     const uri = `https://www.instagram.com/web/comments/${await this.mediaIdFromShortcode(shortcode)}/add/`;
     const headers = {
@@ -604,7 +608,7 @@ export default class IGApi {
       'X-Requested-With': 'XMLHttpRequest',
     };
     const body = `comment_text=${text}&replied_to_comment_id=${commentId}`;
-    const json = await this.sessionPage.evaluate(async (uri, headers, body, shortcode) => {
+    const json = await this._sessionPage.evaluate(async (uri, headers, body, shortcode) => {
       const response = await window.fetch(uri, {
         method: 'POST',
         mode: 'cors',
@@ -628,7 +632,7 @@ export default class IGApi {
   }
 
   private async _mediaCommentLikeUnlikeBase(type: 'like' | 'unlike', shortcode: string, commentId: string) {
-    await this.sessionPage.goto(`https://www.instagram.com/p/${shortcode}/comments/`, { waitUntil: 'networkidle0' });
+    await this._sessionPage.goto(`https://www.instagram.com/p/${shortcode}/comments/`, { waitUntil: 'networkidle0' });
 
     const uri = `https://www.instagram.com/web/comments/${type}/${commentId}/`;
     const headers = {
@@ -640,7 +644,7 @@ export default class IGApi {
       'X-Instagram-Ajax': await this.rolloutHash(),
       'X-Requested-With': 'XMLHttpRequest',
     };
-    const json = await this.sessionPage.evaluate(async (uri, headers, shortcode) => {
+    const json = await this._sessionPage.evaluate(async (uri, headers, shortcode) => {
       const response = await window.fetch(uri, {
         method: 'POST',
         mode: 'cors',
@@ -671,7 +675,7 @@ export default class IGApi {
   }
 
   async mediaCommentSpamReport(shortcode: string, commentId: string) {
-    await this.sessionPage.goto(`https://www.instagram.com/p/${shortcode}/comments/`, { waitUntil: 'networkidle0' });
+    await this._sessionPage.goto(`https://www.instagram.com/p/${shortcode}/comments/`, { waitUntil: 'networkidle0' });
 
     const uri = `https://www.instagram.com/media/${await this.mediaIdFromShortcode(shortcode)}/comment/${commentId}/flag/`;
     const headers = {
@@ -684,7 +688,7 @@ export default class IGApi {
       'X-Requested-With': 'XMLHttpRequest',
     };
     const body = 'reason_id=1';
-    const json = await this.sessionPage.evaluate(async (uri, headers, body, shortcode) => {
+    const json = await this._sessionPage.evaluate(async (uri, headers, body, shortcode) => {
       const response = await window.fetch(uri, {
         method: 'POST',
         mode: 'cors',
@@ -708,7 +712,7 @@ export default class IGApi {
   }
 
   async mediaCommentDelete(shortcode: string, commentId: string) {
-    await this.sessionPage.goto(`https://www.instagram.com/p/${shortcode}/comments/`, { waitUntil: 'networkidle0' });
+    await this._sessionPage.goto(`https://www.instagram.com/p/${shortcode}/comments/`, { waitUntil: 'networkidle0' });
 
     const uri = `https://www.instagram.com/web/comments/${await this.mediaIdFromShortcode(shortcode)}/delete/${commentId}/`;
     const headers = {
@@ -720,7 +724,7 @@ export default class IGApi {
       'X-Instagram-Ajax': await this.rolloutHash(),
       'X-Requested-With': 'XMLHttpRequest',
     };
-    const json = await this.sessionPage.evaluate(async (uri, headers, shortcode) => {
+    const json = await this._sessionPage.evaluate(async (uri, headers, shortcode) => {
       const response = await window.fetch(uri, {
         method: 'POST',
         mode: 'cors',
@@ -743,17 +747,17 @@ export default class IGApi {
   }
 
   private async _mediaLikeUnlikeBase(type: 'like' | 'unlike', shortcode: string) {
-    await this.sessionPage.goto(`https://www.instagram.com/p/${shortcode}/`, { waitUntil: 'networkidle0' });
+    await this._sessionPage.goto(`https://www.instagram.com/p/${shortcode}/`, { waitUntil: 'networkidle0' });
 
-    const $span = await this.sessionPage.$('span.fr66n > button.afkep > span');
-    if (await this.sessionPage.evaluate((span, type) =>
+    const $span = await this._sessionPage.$('span.fr66n > button.afkep > span');
+    if (await this._sessionPage.evaluate((span, type) =>
       span.attributes['aria-label'].textContent !== `${type.charAt(0).toUpperCase()}${type.slice(1)}`
       , $span, type)) {
       throw new Error(`Can't ${type} ${type}d post.`);
     }
 
     const [response] = await Promise.all([
-      this.sessionPage.waitForResponse(response =>
+      this._sessionPage.waitForResponse(response =>
         response.url().includes('/like/') || response.url().includes('/unlike/')
       ),
       $span!.tap(),
@@ -779,7 +783,7 @@ export default class IGApi {
   // Report actions
 
   async profileSpamReport(username: string) {
-    await this.sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
+    await this._sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
 
     const uri = `https://www.instagram.com/users/${await this.profileIdFromUsername(username)}/report/`;
     const headers = {
@@ -792,7 +796,7 @@ export default class IGApi {
       'X-Requested-With': 'XMLHttpRequest',
     };
     const body = 'source_name=profile&reason_id=1';
-    const json = await this.sessionPage.evaluate(async (uri, headers, body, username) => {
+    const json = await this._sessionPage.evaluate(async (uri, headers, body, username) => {
       const response = await window.fetch(uri, {
         method: 'POST',
         mode: 'cors',
@@ -816,7 +820,7 @@ export default class IGApi {
   }
 
   async mediaSpamReport(shortcode: string) {
-    await this.sessionPage.goto(`https://www.instagram.com/p/${shortcode}/`, { waitUntil: 'networkidle0' });
+    await this._sessionPage.goto(`https://www.instagram.com/p/${shortcode}/`, { waitUntil: 'networkidle0' });
 
     const uri = `https://www.instagram.com/media/${await this.mediaIdFromShortcode(shortcode)}/flag/`;
     const headers = {
@@ -829,7 +833,7 @@ export default class IGApi {
       'X-Requested-With': 'XMLHttpRequest',
     };
     const body = 'reason_id=1';
-    const json = await this.sessionPage.evaluate(async (uri, headers, body, shortcode) => {
+    const json = await this._sessionPage.evaluate(async (uri, headers, body, shortcode) => {
       const response = await window.fetch(uri, {
         method: 'POST',
         mode: 'cors',
@@ -855,7 +859,7 @@ export default class IGApi {
   // Feed actions
 
   async feedReels() {
-    await this.sessionPage.goto(`https://www.instagram.com/`, { waitUntil: 'networkidle0' });
+    await this._sessionPage.goto(`https://www.instagram.com/`, { waitUntil: 'networkidle0' });
 
     const uriComponents = {
       'query_hash': await this.feedReelsQueryHash(),
@@ -866,7 +870,7 @@ export default class IGApi {
       'Accept': '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
     };
-    const json = await this.sessionPage.evaluate(async (uri, headers) => {
+    const json = await this._sessionPage.evaluate(async (uri, headers) => {
       const response = await window.fetch(uri, {
         method: 'GET',
         mode: 'cors',
@@ -910,7 +914,7 @@ export default class IGApi {
         'variables': baseUriComponents.variables + `"fetch_media_item_cursor":"${currentCursor}",${baseUriComponents.variables_end}`,
       };
       const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
-      json = await this.sessionPage.evaluate(async (uri, headers) => {
+      json = await this._sessionPage.evaluate(async (uri, headers) => {
         const response = await window.fetch(uri, {
           method: 'GET',
           mode: 'cors',
@@ -950,14 +954,14 @@ export default class IGApi {
 
       currentCursor = newCursor;
 
-      await this.sessionPage.waitFor(2000);
+      await this._sessionPage.waitFor(2000);
     } while (true);
   }
 
   async * feed() {
-    await this.sessionPage.goto(`https://www.instagram.com/`, { waitUntil: 'networkidle0' });
+    await this._sessionPage.goto(`https://www.instagram.com/`, { waitUntil: 'networkidle0' });
 
-    const { feed } = await this.sessionPage.evaluate('window.__additionalData');
+    const { feed } = await this._sessionPage.evaluate('window.__additionalData');
 
     yield feed;
 
@@ -1000,7 +1004,7 @@ export default class IGApi {
         'variables': baseUriComponents.variables + `"after":"${currentCursor}"}`,
       };
       const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
-      json = await this.sessionPage.evaluate(async (uri, headers) => {
+      json = await this._sessionPage.evaluate(async (uri, headers) => {
         const response = await window.fetch(uri, {
           method: 'GET',
           mode: 'cors',
@@ -1040,14 +1044,14 @@ export default class IGApi {
 
       currentCursor = newCursor;
 
-      await this.sessionPage.waitFor(2000);
+      await this._sessionPage.waitFor(2000);
     } while (true);
   }
 
   // Explore actions
 
   async * discoverFeed() {
-    await this.sessionPage.goto('https://www.instagram.com/explore/', { waitUntil: 'networkidle0' });
+    await this._sessionPage.goto('https://www.instagram.com/explore/', { waitUntil: 'networkidle0' });
 
     const uriComponents = {
       'query_hash': await this.discoverQueryHash(),
@@ -1060,7 +1064,7 @@ export default class IGApi {
       'X-Ig-App-Id': await this.instagramWebFBAppId(),
       'X-Requested-With': 'XMLHttpRequest',
     };
-    const json = await this.sessionPage.evaluate(async (uri, headers) => {
+    const json = await this._sessionPage.evaluate(async (uri, headers) => {
       const response = await window.fetch(uri, {
         method: 'GET',
         mode: 'cors',
@@ -1120,7 +1124,7 @@ export default class IGApi {
         'variables': baseUriComponents.variables + `"after":"${currentCursor}"}`,
       };
       const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
-      json = await this.sessionPage.evaluate(async (uri, headers, shortcode) => {
+      json = await this._sessionPage.evaluate(async (uri, headers, shortcode) => {
         const response = await window.fetch(uri, {
           method: 'GET',
           mode: 'cors',
@@ -1160,12 +1164,12 @@ export default class IGApi {
 
       currentCursor = newCursor;
 
-      await this.sessionPage.waitFor(2000);
+      await this._sessionPage.waitFor(2000);
     } while (true);
   }
 
   async * discoverChaining(shortcode: string) {
-    await this.sessionPage.goto(`https://www.instagram.com/p/${shortcode}/?chaining=true`, { waitUntil: 'networkidle0' });
+    await this._sessionPage.goto(`https://www.instagram.com/p/${shortcode}/?chaining=true`, { waitUntil: 'networkidle0' });
 
     const uriComponents = {
       'query_hash': await this.discoverChainingQueryHash(),
@@ -1178,7 +1182,7 @@ export default class IGApi {
       'X-Ig-App-Id': await this.instagramWebFBAppId(),
       'X-Requested-With': 'XMLHttpRequest',
     };
-    const json = await this.sessionPage.evaluate(async (uri, headers, shortcode) => {
+    const json = await this._sessionPage.evaluate(async (uri, headers, shortcode) => {
       const response = await window.fetch(uri, {
         method: 'GET',
         mode: 'cors',
@@ -1218,7 +1222,7 @@ export default class IGApi {
   }
 
   async search(text: string) {
-    await this.sessionPage.goto('https://www.instagram.com/explore/search/', { waitUntil: 'networkidle0' });
+    await this._sessionPage.goto('https://www.instagram.com/explore/search/', { waitUntil: 'networkidle0' });
 
     const uriComponents = {
       'context': 'blended',
@@ -1233,7 +1237,7 @@ export default class IGApi {
       'X-Ig-App-Id': await this.instagramWebFBAppId(),
       'X-Requested-With': 'XMLHttpRequest',
     };
-    const json = await this.sessionPage.evaluate(async (uri, headers) => {
+    const json = await this._sessionPage.evaluate(async (uri, headers) => {
       const response = await window.fetch(uri, {
         method: 'GET',
         mode: 'cors',
@@ -1258,15 +1262,15 @@ export default class IGApi {
   // Upload action
 
   async uploadMedia(text: string, path: string) {
-    await this.sessionPage.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
+    await this._sessionPage.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
 
     await this.menu('upload');
-    await (await this.sessionPage.$('nav.NXc7H.f11OC input'))!.uploadFile(path)
+    await (await this._sessionPage.$('nav.NXc7H.f11OC input'))!.uploadFile(path)
 
-    await this.sessionPage.waitForSelector('button.UP43G');
+    await this._sessionPage.waitForSelector('button.UP43G');
     const [fbUploadResponse] = await Promise.all([
-      this.sessionPage.waitForResponse(response => response.url().includes('fb_uploader')),
-      this.sessionPage.tap('button.UP43G'),
+      this._sessionPage.waitForResponse(response => response.url().includes('fb_uploader')),
+      this._sessionPage.tap('button.UP43G'),
     ]);
     if (fbUploadResponse.status() !== 200) {
       throw new Error('...');
@@ -1276,11 +1280,11 @@ export default class IGApi {
       throw new Error('...');
     }
 
-    await this.sessionPage.waitForSelector('button.UP43G');
-    await this.sessionPage.type('textarea[placeholder="Write a caption…"]', text, { delay: 200 });
+    await this._sessionPage.waitForSelector('button.UP43G');
+    await this._sessionPage.type('textarea[placeholder="Write a caption…"]', text, { delay: 200 });
     const [configureResponse] = await Promise.all([
-      this.sessionPage.waitForResponse(response => response.url().includes('configure')),
-      this.sessionPage.tap('button.UP43G'),
+      this._sessionPage.waitForResponse(response => response.url().includes('configure')),
+      this._sessionPage.tap('button.UP43G'),
     ]);
     if (configureResponse.status() !== 200) {
       throw new Error('...');
@@ -1311,7 +1315,7 @@ export default class IGApi {
   }
 
   async csrfToken() {
-    const cookies = await this.sessionPage.cookies('https://www.instagram.com');
+    const cookies = await this._sessionPage.cookies('https://www.instagram.com');
     const { value } = cookies.find(value => value.name === 'csrftoken')!;
     return value;
   }
@@ -1389,7 +1393,7 @@ export default class IGApi {
   }
 
   async discoverChainingQueryHash() {
-    const src = await this.sessionPage.evaluate(() => {
+    const src = await this._sessionPage.evaluate(() => {
       const array = [...document.querySelectorAll('script')];
       return array.find(value => value.src.includes('MediaChainingPageContainer.js'))!.src;
     });
@@ -1399,7 +1403,7 @@ export default class IGApi {
   }
 
   async rolloutHash(): Promise<string> {
-    const { rollout_hash } = await this.sessionPage.evaluate('window._sharedData');
+    const { rollout_hash } = await this._sessionPage.evaluate('window._sharedData');
     return rollout_hash;
   }
 }
