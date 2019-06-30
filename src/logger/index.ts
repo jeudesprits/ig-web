@@ -40,7 +40,7 @@ if (isProduction()) {
 logger.add(new Telegram({
   token: secrets!.TG_TOKEN,
   chatId: secrets!.TG_CHANNEL_NAME,
-  pathToImage: '',
+  pathToImage: './tmp/screenshot.jpeg',
 }));
 
 export default logger;
