@@ -1,9 +1,9 @@
 import Transport from 'winston-transport';
-import FormDate from 'form-data';
+import FormData from 'form-data';
 import fetch from 'node-fetch';
 import fs from 'fs';
 
-interface TelegramTranportOptions extends Transport.TransportStreamOptions {
+interface TelegramTranportsOptions extends Transport.TransportStreamOptions {
   token: string
   chatId: string
   pathToImage: string
@@ -17,7 +17,7 @@ export class TelegramTransport extends Transport {
 
   private pathToImage: string
 
-  constructor(options: TelegramTranportOptions) {
+  constructor(options: TelegramTranportsOptions) {
     super(options);
 
     this.token = options.token;
@@ -46,7 +46,7 @@ export class TelegramTransport extends Transport {
   private async sendImage() {
     const imageStream = fs.createReadStream(this.pathToImage);
 
-    const formData = new FormDate();
+    const formData = new FormData();
     formData.append('chat_id', this.chatId);
     formData.append('photo', imageStream);
     formData.append('disable_notification', 'true');
