@@ -22,12 +22,12 @@
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     /* Module Resolution Options */
-    "baseUrl": ".",
+    "baseUrl": "./src",
     "moduleResolution": "node",
     "paths": {
       "*": [
-        "node_modules/*",
-        "src/types/*"
+        "./node_modules/*",
+        "./src/types/*"
       ]
     },
     "esModuleInterop": true,
@@ -35,6 +35,6 @@
     "experimentalDecorators": true
   },
   "include": [
-    "src/**/*"
+    "./src/**/*"
   ],
 }

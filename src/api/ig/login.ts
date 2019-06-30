@@ -1,6 +1,6 @@
 import { Page, ElementHandle } from 'puppeteer';
 import Browser from '../../browser';
-import axios from 'axios';
+import fetch from 'node-fetch';
 import querystring from 'querystring';
 import { question } from 'readline-sync';
 
@@ -201,7 +201,7 @@ export default class IGApi {
       };
       const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
       json = await this.sessionPage.evaluate(async (uri, headers, username) => {
-        const response = await fetch(uri, {
+        const response = await window.fetch(uri, {
           method: 'GET',
           mode: 'cors',
           headers: new Headers(headers),
@@ -281,7 +281,7 @@ export default class IGApi {
       'X-Requested-With': 'XMLHttpRequest',
     };
     const json = await this.sessionPage.evaluate(async (uri, headers, username) => {
-      const response = await fetch(uri, {
+      const response = await window.fetch(uri, {
         method: 'GET',
         mode: 'cors',
         headers: new Headers(headers),
@@ -343,7 +343,7 @@ export default class IGApi {
       };
       const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
       json = await this.sessionPage.evaluate(async (uri, headers, username) => {
-        const response = await fetch(uri, {
+        const response = await window.fetch(uri, {
           method: 'GET',
           mode: 'cors',
           headers: new Headers(headers),
@@ -423,7 +423,7 @@ export default class IGApi {
       'X-Requested-With': 'XMLHttpRequest',
     };
     const json = await this.sessionPage.evaluate(async (uri, headers, username) => {
-      const response = await fetch(uri, {
+      const response = await window.fetch(uri, {
         method: 'GET',
         mode: 'cors',
         headers: new Headers(headers),
@@ -488,7 +488,7 @@ export default class IGApi {
     };
     const uri = `https://www.instagram.com/web/friendships/${id}/${type}/`;
     const json = await this.sessionPage.evaluate(async (uri, headers, username) => {
-      const response = await fetch(uri, {
+      const response = await window.fetch(uri, {
         method: 'POST',
         mode: 'cors',
         headers: new Headers(headers),
@@ -605,7 +605,7 @@ export default class IGApi {
     };
     const body = `comment_text=${text}&replied_to_comment_id=${commentId}`;
     const json = await this.sessionPage.evaluate(async (uri, headers, body, shortcode) => {
-      const response = await fetch(uri, {
+      const response = await window.fetch(uri, {
         method: 'POST',
         mode: 'cors',
         headers: new Headers(headers),
@@ -641,7 +641,7 @@ export default class IGApi {
       'X-Requested-With': 'XMLHttpRequest',
     };
     const json = await this.sessionPage.evaluate(async (uri, headers, shortcode) => {
-      const response = await fetch(uri, {
+      const response = await window.fetch(uri, {
         method: 'POST',
         mode: 'cors',
         headers: new Headers(headers),
@@ -685,7 +685,7 @@ export default class IGApi {
     };
     const body = 'reason_id=1';
     const json = await this.sessionPage.evaluate(async (uri, headers, body, shortcode) => {
-      const response = await fetch(uri, {
+      const response = await window.fetch(uri, {
         method: 'POST',
         mode: 'cors',
         headers: new Headers(headers),
@@ -721,7 +721,7 @@ export default class IGApi {
       'X-Requested-With': 'XMLHttpRequest',
     };
     const json = await this.sessionPage.evaluate(async (uri, headers, shortcode) => {
-      const response = await fetch(uri, {
+      const response = await window.fetch(uri, {
         method: 'POST',
         mode: 'cors',
         headers: new Headers(headers),
@@ -793,7 +793,7 @@ export default class IGApi {
     };
     const body = 'source_name=profile&reason_id=1';
     const json = await this.sessionPage.evaluate(async (uri, headers, body, username) => {
-      const response = await fetch(uri, {
+      const response = await window.fetch(uri, {
         method: 'POST',
         mode: 'cors',
         headers: new Headers(headers),
@@ -830,7 +830,7 @@ export default class IGApi {
     };
     const body = 'reason_id=1';
     const json = await this.sessionPage.evaluate(async (uri, headers, body, shortcode) => {
-      const response = await fetch(uri, {
+      const response = await window.fetch(uri, {
         method: 'POST',
         mode: 'cors',
         headers: new Headers(headers),
@@ -854,7 +854,6 @@ export default class IGApi {
 
   // Feed actions
 
-
   async feedReels() {
     await this.sessionPage.goto(`https://www.instagram.com/`, { waitUntil: 'networkidle0' });
 
@@ -868,7 +867,7 @@ export default class IGApi {
       'Accept-Language': 'en-US,en;q=0.9',
     };
     const json = await this.sessionPage.evaluate(async (uri, headers) => {
-      const response = await fetch(uri, {
+      const response = await window.fetch(uri, {
         method: 'GET',
         mode: 'cors',
         headers: new Headers(headers),
@@ -912,7 +911,7 @@ export default class IGApi {
       };
       const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
       json = await this.sessionPage.evaluate(async (uri, headers) => {
-        const response = await fetch(uri, {
+        const response = await window.fetch(uri, {
           method: 'GET',
           mode: 'cors',
           headers: new Headers(headers),
@@ -1002,7 +1001,7 @@ export default class IGApi {
       };
       const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
       json = await this.sessionPage.evaluate(async (uri, headers) => {
-        const response = await fetch(uri, {
+        const response = await window.fetch(uri, {
           method: 'GET',
           mode: 'cors',
           headers: new Headers(headers),
@@ -1062,7 +1061,7 @@ export default class IGApi {
       'X-Requested-With': 'XMLHttpRequest',
     };
     const json = await this.sessionPage.evaluate(async (uri, headers) => {
-      const response = await fetch(uri, {
+      const response = await window.fetch(uri, {
         method: 'GET',
         mode: 'cors',
         headers: new Headers(headers),
@@ -1122,7 +1121,7 @@ export default class IGApi {
       };
       const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
       json = await this.sessionPage.evaluate(async (uri, headers, shortcode) => {
-        const response = await fetch(uri, {
+        const response = await window.fetch(uri, {
           method: 'GET',
           mode: 'cors',
           headers: new Headers(headers),
@@ -1180,7 +1179,7 @@ export default class IGApi {
       'X-Requested-With': 'XMLHttpRequest',
     };
     const json = await this.sessionPage.evaluate(async (uri, headers, shortcode) => {
-      const response = await fetch(uri, {
+      const response = await window.fetch(uri, {
         method: 'GET',
         mode: 'cors',
         headers: new Headers(headers),
@@ -1235,7 +1234,7 @@ export default class IGApi {
       'X-Requested-With': 'XMLHttpRequest',
     };
     const json = await this.sessionPage.evaluate(async (uri, headers) => {
-      const response = await fetch(uri, {
+      const response = await window.fetch(uri, {
         method: 'GET',
         mode: 'cors',
         headers: new Headers(headers),
@@ -1324,8 +1323,8 @@ export default class IGApi {
       const array = [...document.querySelectorAll('script')];
       return array.find(value => value.src.includes('ConsumerLibCommons.js'))!.src;
     });
-    const { data } = await axios.get<string>(src);
-    const [, id] = data.match(/instagramWebFBAppId='(.+?)'/)!;
+    const response = await fetch(src);
+    const [, id] = (await response.text()).match(/instagramWebFBAppId='(.+?)'/)!;
     return id;
   }
 
@@ -1336,8 +1335,8 @@ export default class IGApi {
       const array = [...document.querySelectorAll('script')];
       return array.find(value => value.src.includes('Consumer.js'))!.src;
     });
-    const { data } = await axios.get<string>(src);
-    const [, hash] = data.match(/FOLLOW_LIST_REQUEST_FAILED.+?"(.+?)"/)!;
+    const response = await fetch(src);
+    const [, hash] = (await response.text()).match(/FOLLOW_LIST_REQUEST_FAILED.+?"(.+?)"/)!;
     return hash;
   }
 
@@ -1348,8 +1347,8 @@ export default class IGApi {
       const array = [...document.querySelectorAll('script')];
       return array.find(value => value.src.includes('Consumer.js'))!.src;
     });
-    const { data } = await axios.get<string>(src);
-    const [, hash] = data.match(/FOLLOW_LIST_REQUEST_FAILED.+?".+?".+?"(.+?)"/)!;
+    const response = await fetch(src);
+    const [, hash] = (await response.text()).match(/FOLLOW_LIST_REQUEST_FAILED.+?".+?".+?"(.+?)"/)!;
     return hash;
   }
 
@@ -1360,8 +1359,8 @@ export default class IGApi {
       const array = [...document.querySelectorAll('script')];
       return array.find(value => value.src.includes('Consumer.js'))!.src;
     });
-    const { data } = await axios.get<string>(src);
-    const [, hash] = data.match(/FEED_PAGE_EXTRAS_QUERY_ID="(.+?)"/)!;
+    const response = await fetch(src);
+    const [, hash] = (await response.text()).match(/FEED_PAGE_EXTRAS_QUERY_ID="(.+?)"/)!;
     return hash;
   }
 
@@ -1372,8 +1371,8 @@ export default class IGApi {
       const array = [...document.querySelectorAll('script')];
       return array.find(value => value.src.includes('Consumer.js'))!.src;
     });
-    const { data } = await axios.get<string>(src);
-    const [, hash] = data.match(/graphql\/query\/.+?"(.+?)"/)!;
+    const response = await fetch(src);
+    const [, hash] = (await response.text()).match(/graphql\/query\/.+?"(.+?)"/)!;
     return hash;
   }
 
@@ -1384,8 +1383,8 @@ export default class IGApi {
       const array = [...document.querySelectorAll('script')];
       return array.find(value => value.src.includes('DiscoverMediaPageContainer.js'))!.src;
     });
-    const { data } = await axios.get<string>(src);
-    const [, hash] = data.match(/discover.pagination.+?"(.+?)"/)!;
+    const response = await fetch(src);
+    const [, hash] = (await response.text()).match(/discover.pagination.+?"(.+?)"/)!;
     return hash;
   }
 
@@ -1394,8 +1393,8 @@ export default class IGApi {
       const array = [...document.querySelectorAll('script')];
       return array.find(value => value.src.includes('MediaChainingPageContainer.js'))!.src;
     });
-    const { data } = await axios.get<string>(src);
-    const [, hash] = data.match(/discoverChaining.+?"(.+?)"/)!;
+    const response = await fetch(src);
+    const [, hash] = (await response.text()).match(/discoverChaining.+?"(.+?)"/)!;
     return hash;
   }
 
