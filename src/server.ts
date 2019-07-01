@@ -14,7 +14,10 @@ import { msleep } from './utils/helpers';
     await api.logIn('lakrimoca', 'Mynewpassword317');
   } catch (error) {
     await Browser.screenshot(api.sessionPage, './tmp/screenshot.jpeg');
-    logger.error(`IG Api login error: ${error}`);
+    logger.error(`IG Api login ${error}`);
+    await msleep(2000);
+    await Browser.close();
+    return;
   }
 
   let count = 0;
@@ -38,7 +41,7 @@ import { msleep } from './utils/helpers';
         ++count;
         await api.profileUnfollow(username);
       } catch (error) {
-        logger.error(`IG Api profileUnfollow error: ${error}`);
+        logger.error(`IG Api profileUnfollow ${error}`);
         await msleep(2000);
         break loop1;
       }

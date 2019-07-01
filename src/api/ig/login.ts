@@ -75,7 +75,24 @@ export default class IGApi {
       await $codeInput.type(code, { delay: 100 });
 
       const $submitButton = await this._sessionPage.waitForSelector('form.JraEb  button');
-      await $submitButton.tap();
+
+      const [response] = await Promise.all([
+        this._sessionPage.waitForResponse((response) => response.url().includes('challenge')),
+        $submitButton.tap(),
+      ]);
+
+      const {
+        challenge: {
+          errors: [
+            error,
+          ]
+        },
+        status,
+      } = await response.json();
+
+      if (status === 'fail') {
+        throw new Error(error);
+      }
     }
   }
 
