@@ -1344,6 +1344,7 @@ export default class IGApi {
       const array = [...document.querySelectorAll('script')];
       return array.find(value => value.src.includes('ConsumerLibCommons.js'))!.src;
     });
+    await page.close();
     const response = await fetch(src);
     const [, id] = (await response.text()).match(/instagramWebFBAppId='(.+?)'/)!;
     return id;
@@ -1356,6 +1357,7 @@ export default class IGApi {
       const array = [...document.querySelectorAll('script')];
       return array.find(value => value.src.includes('Consumer.js'))!.src;
     });
+    await page.close();
     const response = await fetch(src);
     const [, hash] = (await response.text()).match(/FOLLOW_LIST_REQUEST_FAILED.+?"(.+?)"/)!;
     return hash;
@@ -1368,6 +1370,7 @@ export default class IGApi {
       const array = [...document.querySelectorAll('script')];
       return array.find(value => value.src.includes('Consumer.js'))!.src;
     });
+    await page.close();
     const response = await fetch(src);
     const [, hash] = (await response.text()).match(/FOLLOW_LIST_REQUEST_FAILED.+?".+?".+?"(.+?)"/)!;
     return hash;
@@ -1380,6 +1383,7 @@ export default class IGApi {
       const array = [...document.querySelectorAll('script')];
       return array.find(value => value.src.includes('Consumer.js'))!.src;
     });
+    await page.close();
     const response = await fetch(src);
     const [, hash] = (await response.text()).match(/FEED_PAGE_EXTRAS_QUERY_ID="(.+?)"/)!;
     return hash;
@@ -1392,6 +1396,7 @@ export default class IGApi {
       const array = [...document.querySelectorAll('script')];
       return array.find(value => value.src.includes('Consumer.js'))!.src;
     });
+    await page.close();
     const response = await fetch(src);
     const [, hash] = (await response.text()).match(/graphql\/query\/.+?"(.+?)"/)!;
     return hash;
@@ -1404,6 +1409,7 @@ export default class IGApi {
       const array = [...document.querySelectorAll('script')];
       return array.find(value => value.src.includes('DiscoverMediaPageContainer.js'))!.src;
     });
+    await page.close();
     const response = await fetch(src);
     const [, hash] = (await response.text()).match(/discover.pagination.+?"(.+?)"/)!;
     return hash;
