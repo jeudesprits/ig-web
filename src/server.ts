@@ -41,6 +41,7 @@ import { msleep } from './utils/helpers';
         ++count;
         await api.profileUnfollow(username);
       } catch (error) {
+        await Browser.screenshot(api.sessionPage, './tmp/screenshot.jpeg');
         logger.error(`IG Api profileUnfollow ${error}`);
         await msleep(2000);
         break loop1;
