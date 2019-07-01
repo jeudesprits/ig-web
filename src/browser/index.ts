@@ -1,4 +1,5 @@
 import puppeteer from 'puppeteer';
+import { existsSync, mkdirSync } from 'fs';
 
 export default class Browser {
 
@@ -41,6 +42,10 @@ export default class Browser {
   }
 
   static async screenshot(page: puppeteer.Page, path: string) {
+    if (!existsSync('./tmp')) {
+      mkdirSync('./tmp');
+    }
+
     await page.screenshot({
       path,
       type: 'jpeg',
