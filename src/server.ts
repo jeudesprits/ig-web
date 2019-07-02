@@ -11,7 +11,7 @@ import { msleep } from './utils/helpers';
   await api.prepare();
 
   try {
-    await api.logIn('lakrimoca', 'Mynewpassword317');
+    await api.logIn('...', '...');
   } catch (error) {
     await Browser.screenshot(api.sessionPage, './tmp/screenshot.jpeg');
     logger.error(`IG Api login ${error}`);
