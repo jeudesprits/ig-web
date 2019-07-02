@@ -11,6 +11,8 @@ export default class IGApi {
     return this._sessionPage;
   }
 
+  private cache: any;
+
   async prepare() {
     this._sessionPage = await Browser.newPage();
   }
@@ -1474,91 +1476,119 @@ export default class IGApi {
   }
 
   async instagramWebFBAppId() {
-    const page = await Browser.newPage();
-    await page.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
-    const src = await page.evaluate(() => {
-      const array = [...document.querySelectorAll('script')];
-      return array.find(value => value.src.includes('ConsumerLibCommons.js'))!.src;
-    });
-    await page.close();
-    const response = await fetch(src);
-    const [, id] = (await response.text()).match(/instagramWebFBAppId='(.+?)'/)!;
-    return id;
+    if (this.cache.instagramWebFBAppId === undefined) {
+      const page = await Browser.newPage();
+      await page.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
+      const src = await page.evaluate(() => {
+        const array = [...document.querySelectorAll('script')];
+        return array.find(value => value.src.includes('ConsumerLibCommons.js'))!.src;
+      });
+      await page.close();
+      const response = await fetch(src);
+      const [, id] = (await response.text()).match(/instagramWebFBAppId='(.+?)'/)!;
+      this.cache.instagramWebFBAppId = id;
+    }
+
+    return this.cache.instagramWebFBAppId;
   }
 
   async followersQueryHash() {
-    const page = await Browser.newPage();
-    await page.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
-    const src = await page.evaluate(() => {
-      const array = [...document.querySelectorAll('script')];
-      return array.find(value => value.src.includes('Consumer.js'))!.src;
-    });
-    await page.close();
-    const response = await fetch(src);
-    const [, hash] = (await response.text()).match(/FOLLOW_LIST_REQUEST_FAILED.+?"(.+?)"/)!;
-    return hash;
+    if (this.cache.followersQueryHash === undefined) {
+      const page = await Browser.newPage();
+      await page.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
+      const src = await page.evaluate(() => {
+        const array = [...document.querySelectorAll('script')];
+        return array.find(value => value.src.includes('Consumer.js'))!.src;
+      });
+      await page.close();
+      const response = await fetch(src);
+      const [, hash] = (await response.text()).match(/FOLLOW_LIST_REQUEST_FAILED.+?"(.+?)"/)!;
+      this.cache.followersQueryHash = hash;
+    }
+
+    return this.cache.followersQueryHash;
   }
 
   async followingQueryHash() {
-    const page = await Browser.newPage();
-    await page.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
-    const src = await page.evaluate(() => {
-      const array = [...document.querySelectorAll('script')];
-      return array.find(value => value.src.includes('Consumer.js'))!.src;
-    });
-    await page.close();
-    const response = await fetch(src);
-    const [, hash] = (await response.text()).match(/FOLLOW_LIST_REQUEST_FAILED.+?".+?".+?"(.+?)"/)!;
-    return hash;
+    if (this.cache.followingQueryHash === undefined) {
+      const page = await Browser.newPage();
+      await page.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
+      const src = await page.evaluate(() => {
+        const array = [...document.querySelectorAll('script')];
+        return array.find(value => value.src.includes('Consumer.js'))!.src;
+      });
+      await page.close();
+      const response = await fetch(src);
+      const [, hash] = (await response.text()).match(/FOLLOW_LIST_REQUEST_FAILED.+?".+?".+?"(.+?)"/)!;
+      this.cache.followingQueryHash = hash;
+    }
+
+    return this.cache.followingQueryHash;
   }
 
   async feedReelsQueryHash() {
-    const page = await Browser.newPage();
-    await page.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
-    const src = await page.evaluate(() => {
-      const array = [...document.querySelectorAll('script')];
-      return array.find(value => value.src.includes('Consumer.js'))!.src;
-    });
-    await page.close();
-    const response = await fetch(src);
-    const [, hash] = (await response.text()).match(/FEED_PAGE_EXTRAS_QUERY_ID="(.+?)"/)!;
-    return hash;
+    if (this.cache.feedReelsQueryHash) {
+      const page = await Browser.newPage();
+      await page.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
+      const src = await page.evaluate(() => {
+        const array = [...document.querySelectorAll('script')];
+        return array.find(value => value.src.includes('Consumer.js'))!.src;
+      });
+      await page.close();
+      const response = await fetch(src);
+      const [, hash] = (await response.text()).match(/FEED_PAGE_EXTRAS_QUERY_ID="(.+?)"/)!;
+      this.cache.feedReelsQueryHash = hash;
+    }
+
+    return this.cache.feedReelsQueryHash;
   }
 
   async feedQueryHash() {
-    const page = await Browser.newPage();
-    await page.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
-    const src = await page.evaluate(() => {
-      const array = [...document.querySelectorAll('script')];
-      return array.find(value => value.src.includes('Consumer.js'))!.src;
-    });
-    await page.close();
-    const response = await fetch(src);
-    const [, hash] = (await response.text()).match(/graphql\/query\/.+?"(.+?)"/)!;
-    return hash;
+    if (this.cache.feedQueryHash === undefined) {
+      const page = await Browser.newPage();
+      await page.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
+      const src = await page.evaluate(() => {
+        const array = [...document.querySelectorAll('script')];
+        return array.find(value => value.src.includes('Consumer.js'))!.src;
+      });
+      await page.close();
+      const response = await fetch(src);
+      const [, hash] = (await response.text()).match(/graphql\/query\/.+?"(.+?)"/)!;
+      this.cache.feedQueryHash = hash;
+    }
+
+    return this.cache.feedQueryHash;
   }
 
   async discoverQueryHash() {
-    const page = await Browser.newPage();
-    await page.goto('https://www.instagram.com/explore/', { waitUntil: 'networkidle0' });
-    const src = await page.evaluate(() => {
-      const array = [...document.querySelectorAll('script')];
-      return array.find(value => value.src.includes('DiscoverMediaPageContainer.js'))!.src;
-    });
-    await page.close();
-    const response = await fetch(src);
-    const [, hash] = (await response.text()).match(/discover.pagination.+?"(.+?)"/)!;
-    return hash;
+    if (this.cache.discoverQueryHash === undefined) {
+      const page = await Browser.newPage();
+      await page.goto('https://www.instagram.com/explore/', { waitUntil: 'networkidle0' });
+      const src = await page.evaluate(() => {
+        const array = [...document.querySelectorAll('script')];
+        return array.find(value => value.src.includes('DiscoverMediaPageContainer.js'))!.src;
+      });
+      await page.close();
+      const response = await fetch(src);
+      const [, hash] = (await response.text()).match(/discover.pagination.+?"(.+?)"/)!;
+      this.cache.discoverQueryHash = hash;
+    }
+
+    return this.cache.discoverQueryHash;
   }
 
   async discoverChainingQueryHash() {
-    const src = await this._sessionPage.evaluate(() => {
-      const array = [...document.querySelectorAll('script')];
-      return array.find(value => value.src.includes('MediaChainingPageContainer.js'))!.src;
-    });
-    const response = await fetch(src);
-    const [, hash] = (await response.text()).match(/discoverChaining.+?"(.+?)"/)!;
-    return hash;
+    if (this.cache.discoverChainingQueryHash) {
+      const src = await this._sessionPage.evaluate(() => {
+        const array = [...document.querySelectorAll('script')];
+        return array.find(value => value.src.includes('MediaChainingPageContainer.js'))!.src;
+      });
+      const response = await fetch(src);
+      const [, hash] = (await response.text()).match(/discoverChaining.+?"(.+?)"/)!;
+      this.cache.discoverChainingQueryHash = hash;
+    }
+
+    return this.cache.discoverChainingQueryHash;
   }
 
   async rolloutHash(): Promise<string> {
