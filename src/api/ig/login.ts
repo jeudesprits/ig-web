@@ -11,7 +11,7 @@ export default class IGApi {
     return this._sessionPage;
   }
 
-  private cache: any;
+  private cache: any = {};
 
   async prepare() {
     this._sessionPage = await Browser.newPage();
