@@ -1,7 +1,7 @@
 import Browser from './browser';
 import IGApi from './api/ig/login';
-// import logger from './logger';
-// import { msleep } from './utils/helpers';
+import logger from './logger';
+import { msleep } from './utils/helpers';
 
 // tslint:disable-next-line: no-floating-promises
 (async () => {
@@ -9,47 +9,47 @@ import IGApi from './api/ig/login';
 
   const api = new IGApi();
   await api.prepare();
-  await api.logIn('', '');
-  // try {
-  //   await api.logIn('', '');
-  // } catch (error) {
-  //   await Browser.screenshot(api.sessionPage, './tmp/screenshot.jpeg');
-  //   logger.error(`IG Api login ${error}`);
-  //   await msleep(2000);
-  //   await Browser.close();
-  //   return;
-  // }
 
-  // let count = 0;
-  // loop1: for await (const data of api.profileFollowing('lakrimoca')) {
-  //   const {
-  //     data: {
-  //       user: {
-  //         edge_follow: {
-  //           edges
-  //         }
-  //       }
-  //     }
-  //   } = data;
+  try {
+    await api.logIn('lakrimoca', 'Mynewpassword317');
+  } catch (error) {
+    await Browser.screenshot(api.sessionPage, './tmp/screenshot.jpeg');
+    logger.error(`IG Api login ${error}`);
+    await msleep(2000);
+    await Browser.close();
+    return;
+  }
 
-  //   loop2: for (const { node: { username } } of edges) {
-  //     if (count >= 15) {
-  //       break loop1;
-  //     }
+  let count = 0;
+  loop1: for await (const data of api.profileFollowing('lakrimoca')) {
+    const {
+      data: {
+        user: {
+          edge_follow: { edges },
+        },
+      },
+    } = data;
 
-  //     try {
-  //       ++count;
-  //       await api.profileUnfollow(username);
-  //     } catch (error) {
-  //       await Browser.screenshot(api.sessionPage, './tmp/screenshot.jpeg');
-  //       logger.error(`IG Api profileUnfollow ${error}`);
-  //       await msleep(2000);
-  //       break loop1;
-  //     }
+    loop2: for (const {
+      node: { username },
+    } of edges) {
+      if (count >= 15) {
+        break loop1;
+      }
 
-  //     await msleep(2000);
-  //   }
-  // }
+      try {
+        ++count;
+        await api.profileUnfollow(username);
+      } catch (error) {
+        await Browser.screenshot(api.sessionPage, './tmp/screenshot.jpeg');
+        logger.error(`IG Api profileUnfollow ${error}`);
+        await msleep(2000);
+        break loop1;
+      }
 
-  // await Browser.close();
+      await msleep(2000);
+    }
+  }
+
+  await Browser.close();
 })();
