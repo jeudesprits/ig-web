@@ -4,18 +4,17 @@ import fetch from 'node-fetch';
 import { createReadStream, existsSync } from 'fs';
 
 interface TelegramTransportOptions extends Transport.TransportStreamOptions {
-  token: string
-  chatId: string
-  pathToImage: string
+  token: string;
+  chatId: string;
+  pathToImage: string;
 }
 
 export class TelegramTransport extends Transport {
+  private token: string;
 
-  private token: string
+  private chatId: string;
 
-  private chatId: string
-
-  private pathToImage: string
+  private pathToImage: string;
 
   constructor(options: TelegramTransportOptions) {
     super(options);

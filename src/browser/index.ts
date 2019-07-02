@@ -2,7 +2,6 @@ import puppeteer from 'puppeteer';
 import { existsSync, mkdirSync, rmdirSync } from 'fs';
 
 export default class Browser {
-
   static browser: puppeteer.Browser;
 
   static async launch() {
@@ -55,7 +54,7 @@ export default class Browser {
 
   static clean() {
     if (existsSync('./chromium')) {
-      rmdirSync('./chromium')
+      rmdirSync('./chromium');
     }
   }
 }

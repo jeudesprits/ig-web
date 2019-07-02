@@ -11,36 +11,37 @@ const myFormat = printf(({ level, message, label, timestamp }) => {
 
 const logger = createLogger({
   level: isProduction() ? 'info' : 'debug',
-  format: combine(
-    label({ label: 'ig-web' }),
-    timestamp(),
-    myFormat
-  ),
+  format: combine(label({ label: 'ig-web' }), timestamp(), myFormat),
 });
 
 if (isProduction()) {
-  logger.add(new File({
-    filename: './logs/error.log',
-    level: 'error',
-  }));
+  logger.add(
+    new File({
+      filename: './logs/error.log',
+      level: 'error',
+    }),
+  );
 
-  logger.add(new File({
-    filename: './logs/combined.log',
-    level: 'info',
-  }));
+  logger.add(
+    new File({
+      filename: './logs/combined.log',
+      level: 'info',
+    }),
+  );
 } else {
-  logger.add(new Console({
-    format: combine(
-      format.colorize(),
-      myFormat,
-    )
-  }));
+  logger.add(
+    new Console({
+      format: combine(format.colorize(), myFormat),
+    }),
+  );
 }
 
-logger.add(new Telegram({
-  token: secrets!.TG_TOKEN,
-  chatId: secrets!.TG_CHANNEL_NAME,
-  pathToImage: './tmp/screenshot.jpeg',
-}));
+logger.add(
+  new Telegram({
+    token: secrets!.TG_TOKEN,
+    chatId: secrets!.TG_CHANNEL_NAME,
+    pathToImage: './tmp/screenshot.jpeg',
+  }),
+);
 
 export default logger;

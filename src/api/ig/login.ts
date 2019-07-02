@@ -5,7 +5,6 @@ import querystring from 'querystring';
 import { question, keyInSelect } from 'readline-sync';
 
 export default class IGApi {
-
   private _sessionPage: Page;
 
   get sessionPage() {
@@ -18,13 +17,13 @@ export default class IGApi {
 
   // Login actions
 
-  private async isLoggedIn() {
+  async isLoggedIn() {
     const $html = await this._sessionPage.$('html');
     const isNotLoggedIn: boolean = await this._sessionPage.evaluate(
-      (html) => html.classList.contains('not-logged-in'),
-      $html
+      html => html.classList.contains('not-logged-in'),
+      $html,
     );
-    return !isNotLoggedIn
+    return !isNotLoggedIn;
   }
 
   private async closeAnyHomeScreenDialogsIfNeeded() {
@@ -37,7 +36,7 @@ export default class IGApi {
       const $notNow = await this._sessionPage.waitForSelector('div.piCib button:last-of-type', { timeout: 2000 });
       await $notNow.tap();
     } finally {
-      return
+      return;
     }
   }
 
@@ -50,34 +49,31 @@ export default class IGApi {
     let chooses = [];
     for (const $choose of $$chooses) {
       const $label = await $choose.$('label');
-      const innerText: string = await this._sessionPage.evaluate((label) => label.innerText, $label);
+      const innerText: string = await this._sessionPage.evaluate(label => label.innerText, $label);
       chooses.push(innerText);
     }
-    const key = keyInSelect(chooses, 'Which method you prefer to send a security code to verify your identity?', { cancel: false });
+    const key = keyInSelect(chooses, 'Which method you prefer to send a security code to verify your identity?', {
+      cancel: false,
+    });
     if ($$chooses.length > 1) {
       await $$chooses[key].tap();
     }
-
-    const $sendButton = await this._sessionPage.waitForSelector('form.JraEb  button');
-    await $sendButton.tap();
+    const $sendButton = await this._sessionPage.$('form.JraEb  button');
+    await $sendButton!.tap();
 
     const $codeInput = await this._sessionPage.waitForSelector('input[name=security_code]');
     const code = question('[Challenge] Enter your security code: ');
     await $codeInput.type(code, { delay: 100 });
-
-    const $submitButton = await this._sessionPage.waitForSelector('form.JraEb  button');
-
+    const $submitButton = await this._sessionPage.$('form.JraEb  button');
     const [response] = await Promise.all([
-      this._sessionPage.waitForResponse((response) => response.url().includes('challenge')),
-      $submitButton.tap(),
+      this._sessionPage.waitForResponse(response => response.url().includes('challenge')),
+      $submitButton!.tap(),
     ]);
 
     if (response.status() !== 200 && response.status() !== 400) {
       throw new Error(`Smth went wrong with challenge login request. Code: ${response.status()}`);
     }
-
     const { status } = await response.json();
-
     await this._sessionPage.waitFor(3000);
     if (status !== 'ok') {
       throw new Error(`Smth went wrong with challenge login response. Status: ${status}`);
@@ -94,26 +90,24 @@ export default class IGApi {
     await $input!.type(code, { delay: 100 });
     const $confirm = await this._sessionPage.$('form._3GlM_ button');
     const [response] = await Promise.all([
-      this._sessionPage.waitForResponse((response) => response.url().includes('login/ajax/two_factor')),
+      this._sessionPage.waitForResponse(response => response.url().includes('login/ajax/two_factor')),
       $confirm!.tap(),
     ]);
 
     if (response.status() !== 200 && response.status() !== 400) {
       throw new Error(`Smth went wrong with two-factor login request. Code: ${response.status()}`);
     }
-
     const { status } = await response.json();
-
     await this._sessionPage.waitFor(3000);
     if (status !== 'ok') {
-      throw new Error(`Smth went wrong with two-factor login response. Status: ${status}`)
+      throw new Error(`Smth went wrong with two-factor login response. Status: ${status}`);
     }
 
     const $saveInfo = await this._sessionPage.$('section.ABCxa button');
     await $saveInfo!.tap();
   }
 
-  async logIn(value: string, password: string) {
+  async logIn(value: string, password: string, cleanCookie: boolean = true) {
     await this._sessionPage.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
 
     if (await this.isLoggedIn()) {
@@ -121,13 +115,15 @@ export default class IGApi {
       return;
     }
 
-    for (const cookie of await this._sessionPage.cookies()) {
-      await this._sessionPage.deleteCookie({
-        name: cookie.name,
-        domain: cookie.domain,
-      });
+    if (cleanCookie) {
+      for (const cookie of await this._sessionPage.cookies()) {
+        await this._sessionPage.deleteCookie({
+          name: cookie.name,
+          domain: cookie.domain,
+        });
+      }
+      await this._sessionPage.reload();
     }
-    await this._sessionPage.reload();
 
     const $login = await this._sessionPage.waitForSelector('div.gr27e button.L3NKy');
     await $login.tap();
@@ -138,7 +134,7 @@ export default class IGApi {
     await $input2.type(password, { delay: 100 });
     const $submit = await this._sessionPage.$('div.gr27e button.L3NKy[type=submit]');
     const [response] = await Promise.all([
-      this._sessionPage.waitForResponse((response) => response.url().includes('accounts/login/ajax')),
+      this._sessionPage.waitForResponse(response => response.url().includes('accounts/login/ajax')),
       $submit!.tap(),
     ]);
 
@@ -146,7 +142,6 @@ export default class IGApi {
       throw new Error(`Smth went wrong with login request. Code: ${response.status()}`);
     }
     const { status } = await response.json();
-
     await this._sessionPage.waitFor(3000);
     if (status !== 'ok') {
       if (this.isChallengeRequired()) {
@@ -154,7 +149,7 @@ export default class IGApi {
         if (this.isLoggedIn()) {
           await this.closeAnyHomeScreenDialogsIfNeeded();
         } else {
-          await this.logIn(value, password);
+          await this.logIn(value, password, false);
         }
         return;
       }
@@ -170,7 +165,6 @@ export default class IGApi {
 
   async menu(section: 'home' | 'explore' | 'upload' | 'activity' | 'profile') {
     const $$menu = await this._sessionPage.$$('div.q02Nz');
-
     switch (section) {
       case 'home':
         await $$menu[0].tap();
@@ -200,63 +194,57 @@ export default class IGApi {
 
   async profileInfo(username: string, page?: Page) {
     const currentPage = page ? page : this._sessionPage;
-
     await currentPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
 
     const {
       entry_data: {
-        ProfilePage: [{
-          graphql: {
-            user
-          }
-        }]
-      }
+        ProfilePage: [
+          {
+            graphql: { user },
+          },
+        ],
+      },
     } = await currentPage.evaluate('window._sharedData');
 
     return user;
   }
 
-  async * profileMedia(username: string) {
+  async *profileMedia(username: string) {
     await this._sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
 
     const {
       entry_data: {
-        ProfilePage: [{
-          graphql: {
-            user: {
-              edge_owner_to_timeline_media
-            }
-          }
-        }]
-      }
+        ProfilePage: [
+          {
+            graphql: {
+              user: { edge_owner_to_timeline_media },
+            },
+          },
+        ],
+      },
     } = await this._sessionPage.evaluate('window._sharedData');
 
     let media = edge_owner_to_timeline_media;
     do {
       yield media;
 
-      const [res] = await Promise.all([
-        this._sessionPage.waitForResponse(res =>
-          res.request().resourceType() === 'xhr' &&
-          res.url().includes('query_hash')
+      const [response] = await Promise.all([
+        this._sessionPage.waitForResponse(
+          response => response.request().resourceType() === 'xhr' && response.url().includes('query_hash'),
         ),
-        this._sessionPage.evaluate(() => window.scrollTo(0, window.document.body.scrollHeight))
+        this._sessionPage.evaluate(() => window.scrollTo(0, window.document.body.scrollHeight)),
       ]);
 
       const {
         data: {
-          user: {
-            edge_owner_to_timeline_media
-          }
-        }
-      } = await res.json();
+          user: { edge_owner_to_timeline_media },
+        },
+      } = await response.json();
 
       media = edge_owner_to_timeline_media;
 
       const {
-        page_info: {
-          has_next_page: hasNext
-        }
+        page_info: { has_next_page: hasNext },
       } = media;
 
       if (!hasNext) {
@@ -268,16 +256,18 @@ export default class IGApi {
     } while (true);
   }
 
-  private async * _profileFollowersBase(type: 'after' | 'before', username: string, cursor: string) {
+  private async *_profileFollowersBase(type: 'after' | 'before', username: string, cursor: string) {
     let json;
     let currentCursor = cursor;
 
     const baseUriComponents = {
-      'query_hash': await this.followersQueryHash(),
-      'variables': `{"id":"${await this.profileIdFromUsername(username)}","include_reel":true,"fetch_mutual":true,"first":12,`,
+      query_hash: await this.followersQueryHash(),
+      variables: `{"id":"${await this.profileIdFromUsername(
+        username,
+      )}","include_reel":true,"fetch_mutual":true,"first":12,`,
     };
     const headers = {
-      'Accept': '*/*',
+      Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
       'X-Csrftoken': await this.csrfToken(),
       'X-Ig-App-Id': await this.instagramWebFBAppId(),
@@ -287,24 +277,29 @@ export default class IGApi {
 
     do {
       const uriComponents = {
-        'query_hash': baseUriComponents.query_hash,
-        'variables': baseUriComponents.variables + `"${type}":"${currentCursor}"}`,
+        query_hash: baseUriComponents.query_hash,
+        variables: baseUriComponents.variables + `"${type}":"${currentCursor}"}`,
       };
       const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
-      json = await this._sessionPage.evaluate(async (uri, headers, username) => {
-        const response = await window.fetch(uri, {
-          method: 'GET',
-          mode: 'cors',
-          headers: new Headers(headers),
-          credentials: 'include',
-          referrer: `https://www.instagram.com/${username}/followers/`,
-          referrerPolicy: 'no-referrer-when-downgrade',
-        });
-        if (response.status !== 200) {
-          throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
-        }
-        return response.json();
-      }, uri, headers, username);
+      json = await this._sessionPage.evaluate(
+        async (uri, headers, username) => {
+          const response = await window.fetch(uri, {
+            method: 'GET',
+            mode: 'cors',
+            headers: new Headers(headers),
+            credentials: 'include',
+            referrer: `https://www.instagram.com/${username}/followers/`,
+            referrerPolicy: 'no-referrer-when-downgrade',
+          });
+          if (response.status !== 200) {
+            throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+          }
+          return response.json();
+        },
+        uri,
+        headers,
+        username,
+      );
 
       if (json.status !== 'ok') {
         throw new Error(`Response status is ${json.status}. Something went wrong.`);
@@ -316,13 +311,10 @@ export default class IGApi {
         data: {
           user: {
             edge_followed_by: {
-              page_info: {
-                end_cursor: newCursor,
-                has_next_page: hasNext,
-              }
-            }
-          }
-        }
+              page_info: { end_cursor: newCursor, has_next_page: hasNext },
+            },
+          },
+        },
       } = json;
 
       if (!hasNext) {
@@ -338,7 +330,7 @@ export default class IGApi {
     } while (true);
   }
 
-  async * profileFollowersAfter(username: string, cursor: string) {
+  async *profileFollowersAfter(username: string, cursor: string) {
     if (this._sessionPage.url() !== `https://www.instagram.com/${username}/`) {
       await this._sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
     }
@@ -355,36 +347,43 @@ export default class IGApi {
     return value;
   }
 
-  async * profileFollowers(username: string) {
+  async *profileFollowers(username: string) {
     await this._sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
 
     const uriComponents = {
-      'query_hash': await this.followersQueryHash(),
-      'variables': `{"id":"${await this.profileIdFromUsername(username)}","include_reel":true,"fetch_mutual":true,"first":24}`,
+      query_hash: await this.followersQueryHash(),
+      variables: `{"id":"${await this.profileIdFromUsername(
+        username,
+      )}","include_reel":true,"fetch_mutual":true,"first":24}`,
     };
     const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
     const headers = {
-      'Accept': '*/*',
+      Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
       'X-Csrftoken': await this.csrfToken(),
       'X-Ig-App-Id': await this.instagramWebFBAppId(),
       'X-Instagram-Ajax': await this.rolloutHash(),
       'X-Requested-With': 'XMLHttpRequest',
     };
-    const json = await this._sessionPage.evaluate(async (uri, headers, username) => {
-      const response = await window.fetch(uri, {
-        method: 'GET',
-        mode: 'cors',
-        headers: new Headers(headers),
-        credentials: 'include',
-        referrer: `https://www.instagram.com/${username}/followers/`,
-        referrerPolicy: 'no-referrer-when-downgrade',
-      });
-      if (response.status !== 200) {
-        throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
-      }
-      return response.json();
-    }, uri, headers, username);
+    const json = await this._sessionPage.evaluate(
+      async (uri, headers, username) => {
+        const response = await window.fetch(uri, {
+          method: 'GET',
+          mode: 'cors',
+          headers: new Headers(headers),
+          credentials: 'include',
+          referrer: `https://www.instagram.com/${username}/followers/`,
+          referrerPolicy: 'no-referrer-when-downgrade',
+        });
+        if (response.status !== 200) {
+          throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+        }
+        return response.json();
+      },
+      uri,
+      headers,
+      username,
+    );
 
     if (json.status !== 'ok') {
       throw new Error(`Response status is ${json.status}. Something went wrong.`);
@@ -396,13 +395,10 @@ export default class IGApi {
       data: {
         user: {
           edge_followed_by: {
-            page_info: {
-              end_cursor: newCursor,
-              has_next_page: hasNext,
-            }
-          }
-        }
-      }
+            page_info: { end_cursor: newCursor, has_next_page: hasNext },
+          },
+        },
+      },
     } = json;
 
     if (hasNext) {
@@ -410,16 +406,18 @@ export default class IGApi {
     }
   }
 
-  private async * _profileFollowingBase(type: 'after' | 'before', username: string, cursor: string) {
+  private async *_profileFollowingBase(type: 'after' | 'before', username: string, cursor: string) {
     let json;
     let currentCursor = cursor;
 
     const baseUriComponents = {
-      'query_hash': await this.followingQueryHash(),
-      'variables': `{"id":"${await this.profileIdFromUsername(username)}","include_reel":true,"fetch_mutual":false,"first":12,`,
+      query_hash: await this.followingQueryHash(),
+      variables: `{"id":"${await this.profileIdFromUsername(
+        username,
+      )}","include_reel":true,"fetch_mutual":false,"first":12,`,
     };
     const headers = {
-      'Accept': '*/*',
+      Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
       'X-Csrftoken': await this.csrfToken(),
       'X-Ig-App-Id': await this.instagramWebFBAppId(),
@@ -429,24 +427,29 @@ export default class IGApi {
 
     do {
       const uriComponents = {
-        'query_hash': baseUriComponents.query_hash,
-        'variables': baseUriComponents.variables + `"${type}":"${currentCursor}"}`,
+        query_hash: baseUriComponents.query_hash,
+        variables: baseUriComponents.variables + `"${type}":"${currentCursor}"}`,
       };
       const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
-      json = await this._sessionPage.evaluate(async (uri, headers, username) => {
-        const response = await window.fetch(uri, {
-          method: 'GET',
-          mode: 'cors',
-          headers: new Headers(headers),
-          credentials: 'include',
-          referrer: `https://www.instagram.com/${username}/following/`,
-          referrerPolicy: 'no-referrer-when-downgrade',
-        });
-        if (response.status !== 200) {
-          throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
-        }
-        return response.json();
-      }, uri, headers, username);
+      json = await this._sessionPage.evaluate(
+        async (uri, headers, username) => {
+          const response = await window.fetch(uri, {
+            method: 'GET',
+            mode: 'cors',
+            headers: new Headers(headers),
+            credentials: 'include',
+            referrer: `https://www.instagram.com/${username}/following/`,
+            referrerPolicy: 'no-referrer-when-downgrade',
+          });
+          if (response.status !== 200) {
+            throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+          }
+          return response.json();
+        },
+        uri,
+        headers,
+        username,
+      );
 
       if (json.status !== 'ok') {
         throw new Error(`Response status is ${json.status}. Something went wrong.`);
@@ -458,13 +461,10 @@ export default class IGApi {
         data: {
           user: {
             edge_follow: {
-              page_info: {
-                end_cursor: newCursor,
-                has_next_page: hasNext,
-              }
-            }
-          }
-        }
+              page_info: { end_cursor: newCursor, has_next_page: hasNext },
+            },
+          },
+        },
       } = json;
 
       if (!hasNext) {
@@ -480,7 +480,7 @@ export default class IGApi {
     } while (true);
   }
 
-  async * profileFollowingAfter(username: string, cursor: string) {
+  async *profileFollowingAfter(username: string, cursor: string) {
     if (this._sessionPage.url() !== `https://www.instagram.com/${username}/`) {
       await this._sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
     }
@@ -497,36 +497,43 @@ export default class IGApi {
     return value;
   }
 
-  async * profileFollowing(username: string) {
+  async *profileFollowing(username: string) {
     await this._sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
 
     const uriComponents = {
-      'query_hash': await this.followingQueryHash(),
-      'variables': `{"id":"${await this.profileIdFromUsername(username)}","include_reel":true,"fetch_mutual":false,"first":24}`,
+      query_hash: await this.followingQueryHash(),
+      variables: `{"id":"${await this.profileIdFromUsername(
+        username,
+      )}","include_reel":true,"fetch_mutual":false,"first":24}`,
     };
     const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
     const headers = {
-      'Accept': '*/*',
+      Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
       'X-Csrftoken': await this.csrfToken(),
       'X-Ig-App-Id': await this.instagramWebFBAppId(),
       'X-Instagram-Ajax': await this.rolloutHash(),
       'X-Requested-With': 'XMLHttpRequest',
     };
-    const json = await this._sessionPage.evaluate(async (uri, headers, username) => {
-      const response = await window.fetch(uri, {
-        method: 'GET',
-        mode: 'cors',
-        headers: new Headers(headers),
-        credentials: 'include',
-        referrer: `https://www.instagram.com/${username}/following/`,
-        referrerPolicy: 'no-referrer-when-downgrade',
-      });
-      if (response.status !== 200) {
-        throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
-      }
-      return response.json();
-    }, uri, headers, username);
+    const json = await this._sessionPage.evaluate(
+      async (uri, headers, username) => {
+        const response = await window.fetch(uri, {
+          method: 'GET',
+          mode: 'cors',
+          headers: new Headers(headers),
+          credentials: 'include',
+          referrer: `https://www.instagram.com/${username}/following/`,
+          referrerPolicy: 'no-referrer-when-downgrade',
+        });
+        if (response.status !== 200) {
+          throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+        }
+        return response.json();
+      },
+      uri,
+      headers,
+      username,
+    );
 
     if (json.status !== 'ok') {
       throw new Error(`Response status is ${json.status}. Something went wrong.`);
@@ -538,13 +545,10 @@ export default class IGApi {
       data: {
         user: {
           edge_follow: {
-            page_info: {
-              end_cursor: newCursor,
-              has_next_page: hasNext,
-            }
-          }
-        }
-      }
+            page_info: { end_cursor: newCursor, has_next_page: hasNext },
+          },
+        },
+      },
     } = json;
 
     if (hasNext) {
@@ -553,11 +557,9 @@ export default class IGApi {
   }
 
   private async _profileFollowUnfollowBase(type: 'follow' | 'unfollow', username: string) {
-    const {
-      followed_by_viewer: followedByViewer,
-      requested_by_viewer: requestedByViewer,
-      id,
-    } = await this.profileInfo(username);
+    const { followed_by_viewer: followedByViewer, requested_by_viewer: requestedByViewer, id } = await this.profileInfo(
+      username,
+    );
 
     if (type === 'follow' && followedByViewer) {
       throw new Error(`You're already followed @${username}.`);
@@ -570,7 +572,7 @@ export default class IGApi {
     }
 
     const headers = {
-      'Accept': '*/*',
+      Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
       'X-Csrftoken': await this.csrfToken(),
       'X-Ig-App-Id': await this.instagramWebFBAppId(),
@@ -578,20 +580,25 @@ export default class IGApi {
       'X-Requested-With': 'XMLHttpRequest',
     };
     const uri = `https://www.instagram.com/web/friendships/${id}/${type}/`;
-    const json = await this._sessionPage.evaluate(async (uri, headers, username) => {
-      const response = await window.fetch(uri, {
-        method: 'POST',
-        mode: 'cors',
-        headers: new Headers(headers),
-        credentials: 'include',
-        referrer: `https://www.instagram.com/${username}/`,
-        referrerPolicy: 'no-referrer-when-downgrade',
-      });
-      if (response.status !== 200) {
-        throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
-      }
-      return response.json();
-    }, uri, headers, username);
+    const json = await this._sessionPage.evaluate(
+      async (uri, headers, username) => {
+        const response = await window.fetch(uri, {
+          method: 'POST',
+          mode: 'cors',
+          headers: new Headers(headers),
+          credentials: 'include',
+          referrer: `https://www.instagram.com/${username}/`,
+          referrerPolicy: 'no-referrer-when-downgrade',
+        });
+        if (response.status !== 200) {
+          throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+        }
+        return response.json();
+      },
+      uri,
+      headers,
+      username,
+    );
 
     if (json.status !== 'ok') {
       throw new Error(`Response status is ${json.status}. Something went wrong.`);
@@ -617,59 +624,56 @@ export default class IGApi {
 
     const {
       entry_data: {
-        PostPage: [{
-          graphql: {
-            shortcode_media
-          }
-        }]
-      }
+        PostPage: [
+          {
+            graphql: { shortcode_media },
+          },
+        ],
+      },
     } = await currentPage.evaluate('window._sharedData');
 
     return shortcode_media;
   }
 
-  async * mediaComments(shortcode: string) {
+  async *mediaComments(shortcode: string) {
     await this._sessionPage.goto(`https://www.instagram.com/p/${shortcode}/comments/`, { waitUntil: 'networkidle0' });
 
     const {
       entry_data: {
-        MobileAllCommentsPage: [{
-          graphql: {
-            shortcode_media: {
-              edge_media_to_parent_comment
-            }
-          }
-        }]
-      }
+        MobileAllCommentsPage: [
+          {
+            graphql: {
+              shortcode_media: { edge_media_to_parent_comment },
+            },
+          },
+        ],
+      },
     } = await this._sessionPage.evaluate('window._sharedData');
 
     let comments = edge_media_to_parent_comment;
     do {
       yield comments;
 
-      const [res] = await Promise.all([
-        this._sessionPage.waitForResponse(res =>
-          res.request().resourceType() === 'xhr' &&
-          res.url().includes('query_hash') &&
-          res.url().includes(`shortcode%22%3A%22${shortcode}`),
+      const [response] = await Promise.all([
+        this._sessionPage.waitForResponse(
+          res =>
+            res.request().resourceType() === 'xhr' &&
+            res.url().includes('query_hash') &&
+            res.url().includes(`shortcode%22%3A%22${shortcode}`),
         ),
         this._sessionPage.tap('button.afkep'),
       ]);
 
       const {
         data: {
-          shortcode_media: {
-            edge_media_to_parent_comment
-          }
-        }
-      } = await res.json();
+          shortcode_media: { edge_media_to_parent_comment },
+        },
+      } = await response.json();
 
       comments = edge_media_to_parent_comment;
 
       const {
-        page_info: {
-          has_next_page: hasNext
-        }
+        page_info: { has_next_page: hasNext },
       } = comments;
 
       if (!hasNext) {
@@ -686,7 +690,7 @@ export default class IGApi {
 
     const uri = `https://www.instagram.com/web/comments/${await this.mediaIdFromShortcode(shortcode)}/add/`;
     const headers = {
-      'Accept': '*/*',
+      Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
       'Content-Type': 'application/x-www-form-urlencoded',
       'X-Csrftoken': await this.csrfToken(),
@@ -695,21 +699,27 @@ export default class IGApi {
       'X-Requested-With': 'XMLHttpRequest',
     };
     const body = `comment_text=${text}&replied_to_comment_id=${commentId}`;
-    const json = await this._sessionPage.evaluate(async (uri, headers, body, shortcode) => {
-      const response = await window.fetch(uri, {
-        method: 'POST',
-        mode: 'cors',
-        headers: new Headers(headers),
-        body,
-        credentials: 'include',
-        referrer: `https://www.instagram.com/p/${shortcode}/comments/`,
-        referrerPolicy: 'no-referrer-when-downgrade',
-      });
-      if (response.status !== 200) {
-        throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
-      }
-      return response.json();
-    }, uri, headers, body, shortcode);
+    const json = await this._sessionPage.evaluate(
+      async (uri, headers, body, shortcode) => {
+        const response = await window.fetch(uri, {
+          method: 'POST',
+          mode: 'cors',
+          headers: new Headers(headers),
+          body,
+          credentials: 'include',
+          referrer: `https://www.instagram.com/p/${shortcode}/comments/`,
+          referrerPolicy: 'no-referrer-when-downgrade',
+        });
+        if (response.status !== 200) {
+          throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+        }
+        return response.json();
+      },
+      uri,
+      headers,
+      body,
+      shortcode,
+    );
 
     if (json.status !== 'ok') {
       throw new Error(`Response status is ${json.status}. Something went wrong.`);
@@ -723,7 +733,7 @@ export default class IGApi {
 
     const uri = `https://www.instagram.com/web/comments/${type}/${commentId}/`;
     const headers = {
-      'Accept': '*/*',
+      Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
       'Content-Type': 'application/x-www-form-urlencoded',
       'X-Csrftoken': await this.csrfToken(),
@@ -731,20 +741,25 @@ export default class IGApi {
       'X-Instagram-Ajax': await this.rolloutHash(),
       'X-Requested-With': 'XMLHttpRequest',
     };
-    const json = await this._sessionPage.evaluate(async (uri, headers, shortcode) => {
-      const response = await window.fetch(uri, {
-        method: 'POST',
-        mode: 'cors',
-        headers: new Headers(headers),
-        credentials: 'include',
-        referrer: `https://www.instagram.com/p/${shortcode}/comments/`,
-        referrerPolicy: 'no-referrer-when-downgrade',
-      });
-      if (response.status !== 200) {
-        throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
-      }
-      return response.json();
-    }, uri, headers, shortcode);
+    const json = await this._sessionPage.evaluate(
+      async (uri, headers, shortcode) => {
+        const response = await window.fetch(uri, {
+          method: 'POST',
+          mode: 'cors',
+          headers: new Headers(headers),
+          credentials: 'include',
+          referrer: `https://www.instagram.com/p/${shortcode}/comments/`,
+          referrerPolicy: 'no-referrer-when-downgrade',
+        });
+        if (response.status !== 200) {
+          throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+        }
+        return response.json();
+      },
+      uri,
+      headers,
+      shortcode,
+    );
 
     if (json.status !== 'ok') {
       throw new Error(`Response status is ${json.status}. Something went wrong.`);
@@ -764,9 +779,11 @@ export default class IGApi {
   async mediaCommentSpamReport(shortcode: string, commentId: string) {
     await this._sessionPage.goto(`https://www.instagram.com/p/${shortcode}/comments/`, { waitUntil: 'networkidle0' });
 
-    const uri = `https://www.instagram.com/media/${await this.mediaIdFromShortcode(shortcode)}/comment/${commentId}/flag/`;
+    const uri = `https://www.instagram.com/media/${await this.mediaIdFromShortcode(
+      shortcode,
+    )}/comment/${commentId}/flag/`;
     const headers = {
-      'Accept': '*/*',
+      Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
       'Content-Type': 'application/x-www-form-urlencoded',
       'X-Csrftoken': await this.csrfToken(),
@@ -775,21 +792,27 @@ export default class IGApi {
       'X-Requested-With': 'XMLHttpRequest',
     };
     const body = 'reason_id=1';
-    const json = await this._sessionPage.evaluate(async (uri, headers, body, shortcode) => {
-      const response = await window.fetch(uri, {
-        method: 'POST',
-        mode: 'cors',
-        headers: new Headers(headers),
-        body,
-        credentials: 'include',
-        referrer: `https://www.instagram.com/p/${shortcode}/comments/`,
-        referrerPolicy: 'no-referrer-when-downgrade',
-      });
-      if (response.status !== 200) {
-        throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
-      }
-      return response.json();
-    }, uri, headers, body, shortcode);
+    const json = await this._sessionPage.evaluate(
+      async (uri, headers, body, shortcode) => {
+        const response = await window.fetch(uri, {
+          method: 'POST',
+          mode: 'cors',
+          headers: new Headers(headers),
+          body,
+          credentials: 'include',
+          referrer: `https://www.instagram.com/p/${shortcode}/comments/`,
+          referrerPolicy: 'no-referrer-when-downgrade',
+        });
+        if (response.status !== 200) {
+          throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+        }
+        return response.json();
+      },
+      uri,
+      headers,
+      body,
+      shortcode,
+    );
 
     if (json.status !== 'ok') {
       throw new Error(`Response status is ${json.status}. Something went wrong.`);
@@ -801,9 +824,11 @@ export default class IGApi {
   async mediaCommentDelete(shortcode: string, commentId: string) {
     await this._sessionPage.goto(`https://www.instagram.com/p/${shortcode}/comments/`, { waitUntil: 'networkidle0' });
 
-    const uri = `https://www.instagram.com/web/comments/${await this.mediaIdFromShortcode(shortcode)}/delete/${commentId}/`;
+    const uri = `https://www.instagram.com/web/comments/${await this.mediaIdFromShortcode(
+      shortcode,
+    )}/delete/${commentId}/`;
     const headers = {
-      'Accept': '*/*',
+      Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
       'Content-Type': 'application/x-www-form-urlencoded',
       'X-Csrftoken': await this.csrfToken(),
@@ -811,20 +836,25 @@ export default class IGApi {
       'X-Instagram-Ajax': await this.rolloutHash(),
       'X-Requested-With': 'XMLHttpRequest',
     };
-    const json = await this._sessionPage.evaluate(async (uri, headers, shortcode) => {
-      const response = await window.fetch(uri, {
-        method: 'POST',
-        mode: 'cors',
-        headers: new Headers(headers),
-        credentials: 'include',
-        referrer: `https://www.instagram.com/p/${shortcode}/comments/`,
-        referrerPolicy: 'no-referrer-when-downgrade',
-      });
-      if (response.status !== 200) {
-        throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
-      }
-      return response.json();
-    }, uri, headers, shortcode);
+    const json = await this._sessionPage.evaluate(
+      async (uri, headers, shortcode) => {
+        const response = await window.fetch(uri, {
+          method: 'POST',
+          mode: 'cors',
+          headers: new Headers(headers),
+          credentials: 'include',
+          referrer: `https://www.instagram.com/p/${shortcode}/comments/`,
+          referrerPolicy: 'no-referrer-when-downgrade',
+        });
+        if (response.status !== 200) {
+          throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+        }
+        return response.json();
+      },
+      uri,
+      headers,
+      shortcode,
+    );
 
     if (json.status !== 'ok') {
       throw new Error(`Response status is ${json.status}. Something went wrong.`);
@@ -837,15 +867,19 @@ export default class IGApi {
     await this._sessionPage.goto(`https://www.instagram.com/p/${shortcode}/`, { waitUntil: 'networkidle0' });
 
     const $span = await this._sessionPage.$('span.fr66n > button.afkep > span');
-    if (await this._sessionPage.evaluate((span, type) =>
-      span.attributes['aria-label'].textContent !== `${type.charAt(0).toUpperCase()}${type.slice(1)}`
-      , $span, type)) {
+    if (
+      await this._sessionPage.evaluate(
+        (span, type) => span.attributes['aria-label'].textContent !== `${type.charAt(0).toUpperCase()}${type.slice(1)}`,
+        $span,
+        type,
+      )
+    ) {
       throw new Error(`Can't ${type} ${type}d post.`);
     }
 
     const [response] = await Promise.all([
-      this._sessionPage.waitForResponse(response =>
-        response.url().includes('/like/') || response.url().includes('/unlike/')
+      this._sessionPage.waitForResponse(
+        response => response.url().includes('/like/') || response.url().includes('/unlike/'),
       ),
       $span!.tap(),
     ]);
@@ -853,7 +887,7 @@ export default class IGApi {
       throw new Error('You’re Temporarily Blocked.');
     }
     if (response.status() !== 200) {
-      throw new Error(`Response code is ${response.statusText}. Something went wrong.`)
+      throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
     }
 
     return response.json();
@@ -874,7 +908,7 @@ export default class IGApi {
 
     const uri = `https://www.instagram.com/users/${await this.profileIdFromUsername(username)}/report/`;
     const headers = {
-      'Accept': '*/*',
+      Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
       'Content-Type': 'application/x-www-form-urlencoded',
       'X-Csrftoken': await this.csrfToken(),
@@ -883,21 +917,27 @@ export default class IGApi {
       'X-Requested-With': 'XMLHttpRequest',
     };
     const body = 'source_name=profile&reason_id=1';
-    const json = await this._sessionPage.evaluate(async (uri, headers, body, username) => {
-      const response = await window.fetch(uri, {
-        method: 'POST',
-        mode: 'cors',
-        headers: new Headers(headers),
-        body,
-        credentials: 'include',
-        referrer: `https://www.instagram.com/${username}/`,
-        referrerPolicy: 'no-referrer-when-downgrade',
-      });
-      if (response.status !== 200) {
-        throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
-      }
-      return response.json();
-    }, uri, headers, body, username);
+    const json = await this._sessionPage.evaluate(
+      async (uri, headers, body, username) => {
+        const response = await window.fetch(uri, {
+          method: 'POST',
+          mode: 'cors',
+          headers: new Headers(headers),
+          body,
+          credentials: 'include',
+          referrer: `https://www.instagram.com/${username}/`,
+          referrerPolicy: 'no-referrer-when-downgrade',
+        });
+        if (response.status !== 200) {
+          throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+        }
+        return response.json();
+      },
+      uri,
+      headers,
+      body,
+      username,
+    );
 
     if (json.status !== 'ok') {
       throw new Error(`Response status is ${json.status}. Something went wrong.`);
@@ -911,7 +951,7 @@ export default class IGApi {
 
     const uri = `https://www.instagram.com/media/${await this.mediaIdFromShortcode(shortcode)}/flag/`;
     const headers = {
-      'Accept': '*/*',
+      Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
       'Content-Type': 'application/x-www-form-urlencoded',
       'X-Csrftoken': await this.csrfToken(),
@@ -920,21 +960,27 @@ export default class IGApi {
       'X-Requested-With': 'XMLHttpRequest',
     };
     const body = 'reason_id=1';
-    const json = await this._sessionPage.evaluate(async (uri, headers, body, shortcode) => {
-      const response = await window.fetch(uri, {
-        method: 'POST',
-        mode: 'cors',
-        headers: new Headers(headers),
-        body,
-        credentials: 'include',
-        referrer: `https://www.instagram.com/p/${shortcode}/`,
-        referrerPolicy: 'no-referrer-when-downgrade',
-      });
-      if (response.status !== 200) {
-        throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
-      }
-      return response.json();
-    }, uri, headers, body, shortcode);
+    const json = await this._sessionPage.evaluate(
+      async (uri, headers, body, shortcode) => {
+        const response = await window.fetch(uri, {
+          method: 'POST',
+          mode: 'cors',
+          headers: new Headers(headers),
+          body,
+          credentials: 'include',
+          referrer: `https://www.instagram.com/p/${shortcode}/`,
+          referrerPolicy: 'no-referrer-when-downgrade',
+        });
+        if (response.status !== 200) {
+          throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+        }
+        return response.json();
+      },
+      uri,
+      headers,
+      body,
+      shortcode,
+    );
 
     if (json.status !== 'ok') {
       throw new Error(`Response status is ${json.status}. Something went wrong.`);
@@ -949,28 +995,32 @@ export default class IGApi {
     await this._sessionPage.goto(`https://www.instagram.com/`, { waitUntil: 'networkidle0' });
 
     const uriComponents = {
-      'query_hash': await this.feedReelsQueryHash(),
-      'variables': '{"only_stories":true,"stories_prefetch":true,"stories_video_dash_manifest":false}',
+      query_hash: await this.feedReelsQueryHash(),
+      variables: '{"only_stories":true,"stories_prefetch":true,"stories_video_dash_manifest":false}',
     };
     const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
     const headers = {
-      'Accept': '*/*',
+      Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
     };
-    const json = await this._sessionPage.evaluate(async (uri, headers) => {
-      const response = await window.fetch(uri, {
-        method: 'GET',
-        mode: 'cors',
-        headers: new Headers(headers),
-        credentials: 'include',
-        referrer: 'https://www.instagram.com/',
-        referrerPolicy: 'no-referrer-when-downgrade',
-      });
-      if (response.status !== 200) {
-        throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
-      }
-      return response.json();
-    }, uri, headers);
+    const json = await this._sessionPage.evaluate(
+      async (uri, headers) => {
+        const response = await window.fetch(uri, {
+          method: 'GET',
+          mode: 'cors',
+          headers: new Headers(headers),
+          credentials: 'include',
+          referrer: 'https://www.instagram.com/',
+          referrerPolicy: 'no-referrer-when-downgrade',
+        });
+        if (response.status !== 200) {
+          throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+        }
+        return response.json();
+      },
+      uri,
+      headers,
+    );
 
     if (json.status !== 'ok') {
       throw new Error(`Response status is ${json.status}. Something went wrong.`);
@@ -979,17 +1029,17 @@ export default class IGApi {
     return json;
   }
 
-  private async * _feedBase(cursor: string) {
+  private async *_feedBase(cursor: string) {
     let json;
     let currentCursor = cursor;
 
     const baseUriComponents = {
-      'query_hash': await this.feedQueryHash(),
-      'variables': '{"cached_feed_item_ids":[],"fetch_media_item_count":12,',
-      'variables_end': '"fetch_comment_count":4,"fetch_like":3,"has_stories":false,"has_threaded_comments":true}',
+      query_hash: await this.feedQueryHash(),
+      variables: '{"cached_feed_item_ids":[],"fetch_media_item_count":12,',
+      variables_end: '"fetch_comment_count":4,"fetch_like":3,"has_stories":false,"has_threaded_comments":true}',
     };
     const headers = {
-      'Accept': '*/*',
+      Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
       'X-Ig-App-Id': await this.instagramWebFBAppId(),
       'X-Requested-With': 'XMLHttpRequest',
@@ -997,24 +1047,30 @@ export default class IGApi {
 
     do {
       const uriComponents = {
-        'query_hash': baseUriComponents.query_hash,
-        'variables': baseUriComponents.variables + `"fetch_media_item_cursor":"${currentCursor}",${baseUriComponents.variables_end}`,
+        query_hash: baseUriComponents.query_hash,
+        variables:
+          baseUriComponents.variables +
+          `"fetch_media_item_cursor":"${currentCursor}",${baseUriComponents.variables_end}`,
       };
       const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
-      json = await this._sessionPage.evaluate(async (uri, headers) => {
-        const response = await window.fetch(uri, {
-          method: 'GET',
-          mode: 'cors',
-          headers: new Headers(headers),
-          credentials: 'include',
-          referrer: `https://www.instagram.com/`,
-          referrerPolicy: 'no-referrer-when-downgrade',
-        });
-        if (response.status !== 200) {
-          throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
-        }
-        return response.json();
-      }, uri, headers);
+      json = await this._sessionPage.evaluate(
+        async (uri, headers) => {
+          const response = await window.fetch(uri, {
+            method: 'GET',
+            mode: 'cors',
+            headers: new Headers(headers),
+            credentials: 'include',
+            referrer: `https://www.instagram.com/`,
+            referrerPolicy: 'no-referrer-when-downgrade',
+          });
+          if (response.status !== 200) {
+            throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+          }
+          return response.json();
+        },
+        uri,
+        headers,
+      );
 
       if (json.status !== 'ok') {
         throw new Error(`Response status is ${json.status}. Something went wrong.`);
@@ -1026,13 +1082,10 @@ export default class IGApi {
         data: {
           user: {
             edge_web_feed_timeline: {
-              page_info: {
-                end_cursor: newCursor,
-                has_next_page: hasNext,
-              }
-            }
-          }
-        }
+              page_info: { end_cursor: newCursor, has_next_page: hasNext },
+            },
+          },
+        },
       } = json;
 
       if (!hasNext) {
@@ -1045,7 +1098,7 @@ export default class IGApi {
     } while (true);
   }
 
-  async * feed() {
+  async *feed() {
     await this._sessionPage.goto(`https://www.instagram.com/`, { waitUntil: 'networkidle0' });
 
     const { feed } = await this._sessionPage.evaluate('window.__additionalData');
@@ -1056,13 +1109,10 @@ export default class IGApi {
       data: {
         user: {
           edge_web_feed_timeline: {
-            page_info: {
-              end_cursor: cursor,
-              has_next_page: hasNext,
-            }
-          }
-        }
-      }
+            page_info: { end_cursor: cursor, has_next_page: hasNext },
+          },
+        },
+      },
     } = feed;
 
     if (hasNext) {
@@ -1070,16 +1120,16 @@ export default class IGApi {
     }
   }
 
-  private async * _discoverBase(cursor: string) {
+  private async *_discoverBase(cursor: string) {
     let json;
     let currentCursor = cursor;
 
     const baseUriComponents = {
-      'query_hash': await this.discoverQueryHash(),
-      'variables': `{"first":24,`,
+      query_hash: await this.discoverQueryHash(),
+      variables: `{"first":24,`,
     };
     const headers = {
-      'Accept': '*/*',
+      Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
       'X-Ig-App-Id': await this.instagramWebFBAppId(),
       'X-Requested-With': 'XMLHttpRequest',
@@ -1087,24 +1137,28 @@ export default class IGApi {
 
     do {
       const uriComponents = {
-        'query_hash': baseUriComponents.query_hash,
-        'variables': baseUriComponents.variables + `"after":"${currentCursor}"}`,
+        query_hash: baseUriComponents.query_hash,
+        variables: baseUriComponents.variables + `"after":"${currentCursor}"}`,
       };
       const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
-      json = await this._sessionPage.evaluate(async (uri, headers) => {
-        const response = await window.fetch(uri, {
-          method: 'GET',
-          mode: 'cors',
-          headers: new Headers(headers),
-          credentials: 'include',
-          referrer: 'https://www.instagram.com/explore/',
-          referrerPolicy: 'no-referrer-when-downgrade',
-        });
-        if (response.status !== 200) {
-          throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
-        }
-        return response.json();
-      }, uri, headers);
+      json = await this._sessionPage.evaluate(
+        async (uri, headers) => {
+          const response = await window.fetch(uri, {
+            method: 'GET',
+            mode: 'cors',
+            headers: new Headers(headers),
+            credentials: 'include',
+            referrer: 'https://www.instagram.com/explore/',
+            referrerPolicy: 'no-referrer-when-downgrade',
+          });
+          if (response.status !== 200) {
+            throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+          }
+          return response.json();
+        },
+        uri,
+        headers,
+      );
 
       if (json.status !== 'ok') {
         throw new Error(`Response status is ${json.status}. Something went wrong.`);
@@ -1116,13 +1170,10 @@ export default class IGApi {
         data: {
           user: {
             edge_web_discover_media: {
-              page_info: {
-                end_cursor: newCursor,
-                has_next_page: hasNext,
-              }
-            }
-          }
-        }
+              page_info: { end_cursor: newCursor, has_next_page: hasNext },
+            },
+          },
+        },
       } = json;
 
       if (!hasNext) {
@@ -1137,34 +1188,38 @@ export default class IGApi {
 
   // Explore actions
 
-  async * discoverFeed() {
+  async *discoverFeed() {
     await this._sessionPage.goto('https://www.instagram.com/explore/', { waitUntil: 'networkidle0' });
 
     const uriComponents = {
-      'query_hash': await this.discoverQueryHash(),
-      'variables': `{"first":24}`,
+      query_hash: await this.discoverQueryHash(),
+      variables: `{"first":24}`,
     };
     const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
     const headers = {
-      'Accept': '*/*',
+      Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
       'X-Ig-App-Id': await this.instagramWebFBAppId(),
       'X-Requested-With': 'XMLHttpRequest',
     };
-    const json = await this._sessionPage.evaluate(async (uri, headers) => {
-      const response = await window.fetch(uri, {
-        method: 'GET',
-        mode: 'cors',
-        headers: new Headers(headers),
-        credentials: 'include',
-        referrer: 'https://www.instagram.com/explore/',
-        referrerPolicy: 'no-referrer-when-downgrade',
-      });
-      if (response.status !== 200) {
-        throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
-      }
-      return response.json();
-    }, uri, headers);
+    const json = await this._sessionPage.evaluate(
+      async (uri, headers) => {
+        const response = await window.fetch(uri, {
+          method: 'GET',
+          mode: 'cors',
+          headers: new Headers(headers),
+          credentials: 'include',
+          referrer: 'https://www.instagram.com/explore/',
+          referrerPolicy: 'no-referrer-when-downgrade',
+        });
+        if (response.status !== 200) {
+          throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+        }
+        return response.json();
+      },
+      uri,
+      headers,
+    );
 
     if (json.status !== 'ok') {
       throw new Error(`Response status is ${json.status}. Something went wrong.`);
@@ -1176,13 +1231,10 @@ export default class IGApi {
       data: {
         user: {
           edge_web_discover_media: {
-            page_info: {
-              end_cursor: newCursor,
-              has_next_page: hasNext,
-            }
-          }
-        }
-      }
+            page_info: { end_cursor: newCursor, has_next_page: hasNext },
+          },
+        },
+      },
     } = json;
 
     if (hasNext) {
@@ -1190,16 +1242,18 @@ export default class IGApi {
     }
   }
 
-  private async * _discoverChainingBase(shortcode: string, cursor: string) {
+  private async *_discoverChainingBase(shortcode: string, cursor: string) {
     let json;
     let currentCursor = cursor;
 
     const baseUriComponents = {
-      'query_hash': await this.discoverChainingQueryHash(),
-      'variables': `{"media_id":"${await this.mediaIdFromShortcode(shortcode)}","surface":"WEB_EXPLORE_MEDIA_GRID","first":11,`,
+      query_hash: await this.discoverChainingQueryHash(),
+      variables: `{"media_id":"${await this.mediaIdFromShortcode(
+        shortcode,
+      )}","surface":"WEB_EXPLORE_MEDIA_GRID","first":11,`,
     };
     const headers = {
-      'Accept': '*/*',
+      Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
       'X-Ig-App-Id': await this.instagramWebFBAppId(),
       'X-Requested-With': 'XMLHttpRequest',
@@ -1207,24 +1261,29 @@ export default class IGApi {
 
     do {
       const uriComponents = {
-        'query_hash': baseUriComponents.query_hash,
-        'variables': baseUriComponents.variables + `"after":"${currentCursor}"}`,
+        query_hash: baseUriComponents.query_hash,
+        variables: baseUriComponents.variables + `"after":"${currentCursor}"}`,
       };
       const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
-      json = await this._sessionPage.evaluate(async (uri, headers, shortcode) => {
-        const response = await window.fetch(uri, {
-          method: 'GET',
-          mode: 'cors',
-          headers: new Headers(headers),
-          credentials: 'include',
-          referrer: `https://www.instagram.com/p/${shortcode}/?chaining=true`,
-          referrerPolicy: 'no-referrer-when-downgrade',
-        });
-        if (response.status !== 200) {
-          throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
-        }
-        return response.json();
-      }, uri, headers, shortcode);
+      json = await this._sessionPage.evaluate(
+        async (uri, headers, shortcode) => {
+          const response = await window.fetch(uri, {
+            method: 'GET',
+            mode: 'cors',
+            headers: new Headers(headers),
+            credentials: 'include',
+            referrer: `https://www.instagram.com/p/${shortcode}/?chaining=true`,
+            referrerPolicy: 'no-referrer-when-downgrade',
+          });
+          if (response.status !== 200) {
+            throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+          }
+          return response.json();
+        },
+        uri,
+        headers,
+        shortcode,
+      );
 
       if (json.status !== 'ok') {
         throw new Error(`Response status is ${json.status}. Something went wrong.`);
@@ -1236,13 +1295,10 @@ export default class IGApi {
         data: {
           user: {
             edge_web_media_chaining: {
-              page_info: {
-                end_cursor: newCursor,
-                has_next_page: hasNext,
-              }
-            }
-          }
-        }
+              page_info: { end_cursor: newCursor, has_next_page: hasNext },
+            },
+          },
+        },
       } = json;
 
       if (!hasNext) {
@@ -1255,34 +1311,43 @@ export default class IGApi {
     } while (true);
   }
 
-  async * discoverChaining(shortcode: string) {
-    await this._sessionPage.goto(`https://www.instagram.com/p/${shortcode}/?chaining=true`, { waitUntil: 'networkidle0' });
+  async *discoverChaining(shortcode: string) {
+    await this._sessionPage.goto(`https://www.instagram.com/p/${shortcode}/?chaining=true`, {
+      waitUntil: 'networkidle0',
+    });
 
     const uriComponents = {
-      'query_hash': await this.discoverChainingQueryHash(),
-      'variables': `{"media_id":"${await this.mediaIdFromShortcode(shortcode)}","surface":"WEB_EXPLORE_MEDIA_GRID","first":12}`,
+      query_hash: await this.discoverChainingQueryHash(),
+      variables: `{"media_id":"${await this.mediaIdFromShortcode(
+        shortcode,
+      )}","surface":"WEB_EXPLORE_MEDIA_GRID","first":12}`,
     };
     const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
     const headers = {
-      'Accept': '*/*',
+      Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
       'X-Ig-App-Id': await this.instagramWebFBAppId(),
       'X-Requested-With': 'XMLHttpRequest',
     };
-    const json = await this._sessionPage.evaluate(async (uri, headers, shortcode) => {
-      const response = await window.fetch(uri, {
-        method: 'GET',
-        mode: 'cors',
-        headers: new Headers(headers),
-        credentials: 'include',
-        referrer: `https://www.instagram.com/p/${shortcode}/?chaining=true`,
-        referrerPolicy: 'no-referrer-when-downgrade',
-      });
-      if (response.status !== 200) {
-        throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
-      }
-      return response.json();
-    }, uri, headers, shortcode);
+    const json = await this._sessionPage.evaluate(
+      async (uri, headers, shortcode) => {
+        const response = await window.fetch(uri, {
+          method: 'GET',
+          mode: 'cors',
+          headers: new Headers(headers),
+          credentials: 'include',
+          referrer: `https://www.instagram.com/p/${shortcode}/?chaining=true`,
+          referrerPolicy: 'no-referrer-when-downgrade',
+        });
+        if (response.status !== 200) {
+          throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+        }
+        return response.json();
+      },
+      uri,
+      headers,
+      shortcode,
+    );
 
     if (json.status !== 'ok') {
       throw new Error(`Response status is ${json.status}. Something went wrong.`);
@@ -1294,13 +1359,10 @@ export default class IGApi {
       data: {
         user: {
           edge_web_media_chaining: {
-            page_info: {
-              end_cursor: newCursor,
-              has_next_page: hasNext,
-            }
-          }
-        }
-      }
+            page_info: { end_cursor: newCursor, has_next_page: hasNext },
+          },
+        },
+      },
     } = json;
 
     if (hasNext) {
@@ -1312,32 +1374,36 @@ export default class IGApi {
     await this._sessionPage.goto('https://www.instagram.com/explore/search/', { waitUntil: 'networkidle0' });
 
     const uriComponents = {
-      'context': 'blended',
-      'query': text,
-      'rank_token': Math.random().toString(),
-      'include_reel': true,
+      context: 'blended',
+      query: text,
+      rank_token: Math.random().toString(),
+      include_reel: true,
     };
     const uri = `https://www.instagram.com/web/search/topsearch/?${querystring.stringify(uriComponents)}`;
     const headers = {
-      'Accept': '*/*',
+      Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
       'X-Ig-App-Id': await this.instagramWebFBAppId(),
       'X-Requested-With': 'XMLHttpRequest',
     };
-    const json = await this._sessionPage.evaluate(async (uri, headers) => {
-      const response = await window.fetch(uri, {
-        method: 'GET',
-        mode: 'cors',
-        headers: new Headers(headers),
-        credentials: 'include',
-        referrer: 'https://www.instagram.com/explore/search/',
-        referrerPolicy: 'no-referrer-when-downgrade',
-      });
-      if (response.status !== 200) {
-        throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
-      }
-      return response.json();
-    }, uri, headers);
+    const json = await this._sessionPage.evaluate(
+      async (uri, headers) => {
+        const response = await window.fetch(uri, {
+          method: 'GET',
+          mode: 'cors',
+          headers: new Headers(headers),
+          credentials: 'include',
+          referrer: 'https://www.instagram.com/explore/search/',
+          referrerPolicy: 'no-referrer-when-downgrade',
+        });
+        if (response.status !== 200) {
+          throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+        }
+        return response.json();
+      },
+      uri,
+      headers,
+    );
 
     if (json.status !== 'ok') {
       throw new Error(`Response status is ${json.status}. Something went wrong.`);
@@ -1352,7 +1418,7 @@ export default class IGApi {
     await this._sessionPage.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
 
     await this.menu('upload');
-    await (await this._sessionPage.$('nav.NXc7H.f11OC input'))!.uploadFile(path)
+    await (await this._sessionPage.$('nav.NXc7H.f11OC input'))!.uploadFile(path);
 
     await this._sessionPage.waitForSelector('button.UP43G');
     const [fbUploadResponse] = await Promise.all([

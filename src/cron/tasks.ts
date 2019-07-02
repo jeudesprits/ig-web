@@ -1,5 +1,5 @@
 import Browser from '../browser';
-import IGApi from '../api/ig/login'
+import IGApi from '../api/ig/login';
 
 export async function lakrimocaUnfollow() {
   await Browser.launch();

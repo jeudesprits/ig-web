@@ -9,5 +9,5 @@ cron.schedule(
     // tslint:disable-next-line: no-floating-promises
     lakrimocaUnfollow();
   },
-  { timezone }
+  { timezone },
 );

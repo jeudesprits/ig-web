@@ -9,15 +9,20 @@
   "scripts": {
     "start": "npm run serve",
     "debug": "npm run build && npm run watch-debug",
-    "build": "npm run build-ts && npm run tslint",
+    "build": "npm run build-ts && npm run lint",
     "serve": "node dist/server.js",
     "watch": "concurrently -k -p \"[{name}]\" -n \"TypeScript,Node\" -c \"yellow.bold,cyan.bold,green.bold\" \"npm run watch-ts\" \"npm run watch-node\"",
     "watch-node": "nodemon dist/server.js",
     "watch-ts": "tsc -w",
     "build-ts": "tsc",
-    "tslint": "tslint -c tslint.json -p tsconfig.json",
+    "lint": "npm run lint-ts && npm run lint-prettier",
+    "lint-ts": "tslint -c tslint.json -p tsconfig.json",
+    "lint-prettier": "prettier --check --config .prettierrc --ignore-path .gitignore \"src/**/*.ts\"",
     "watch-debug": "concurrently -k -p \"[{name}]\" -n \"TypeScript,Node\" -c \"yellow.bold,cyan.bold,green.bold\" \"npm run watch-ts\" \"npm run serve-debug\"",
-    "serve-debug": "nodemon --inspect dist/server.js"
+    "serve-debug": "nodemon --inspect dist/server.js",
+    "format": "npm run format-ts && npm run format-prettier",
+    "format-ts": "tslint --fix -c tslint.json -p tsconfig.json",
+    "format-prettier": "prettier --config .prettierrc --ignore-path .gitignore --write \"src/**/*.ts\""
   },
   "repository": {
     "type": "git",
