@@ -6,7 +6,7 @@ export async function lakrimocaUnfollow() {
   const api = new IGApi();
   await api.prepare();
 
-  await api.logIn('lakrimoca', 'CocoBagzLusy317');
+  // await api.logIn('lakrimoca', 'CocoBagzLusy317');
   // for await (const data of await api.profileFollowing('lakrimoca')) {
   //   await api.profileUnfollow('');
   // }

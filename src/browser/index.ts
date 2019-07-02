@@ -1,5 +1,5 @@
 import puppeteer from 'puppeteer';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, rmdirSync } from 'fs';
 
 export default class Browser {
 
@@ -51,5 +51,11 @@ export default class Browser {
       type: 'jpeg',
       fullPage: true,
     });
+  }
+
+  static clean() {
+    if (existsSync('./chromium')) {
+      rmdirSync('./chromium')
+    }
   }
 }

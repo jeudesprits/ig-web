@@ -1,8 +1,8 @@
-import { Page, ElementHandle } from 'puppeteer';
+import { Page } from 'puppeteer';
 import Browser from '../../browser';
 import fetch from 'node-fetch';
 import querystring from 'querystring';
-import { question } from 'readline-sync';
+import { question, keyInSelect } from 'readline-sync';
 
 export default class IGApi {
 
@@ -19,25 +19,101 @@ export default class IGApi {
   // Login actions
 
   private async isLoggedIn() {
-    const html = await this._sessionPage.$('html');
-    const isNotLoggedIn: boolean = await this._sessionPage.evaluate(html => html.classList.contains('not-logged-in'), html);
+    const $html = await this._sessionPage.$('html');
+    const isNotLoggedIn: boolean = await this._sessionPage.evaluate(
+      (html) => html.classList.contains('not-logged-in'),
+      $html
+    );
     return !isNotLoggedIn
+  }
+
+  private async closeAnyHomeScreenDialogsIfNeeded() {
+    try {
+      const $cancel = await this._sessionPage.waitForSelector('div.piCib button:last-of-type', { timeout: 2000 });
+      await $cancel.tap();
+
+      await this._sessionPage.evaluate(() => window.scrollTo(0, 300));
+
+      const $notNow = await this._sessionPage.waitForSelector('div.piCib button:last-of-type', { timeout: 2000 });
+      await $notNow.tap();
+    } finally {
+      return
+    }
   }
 
   private isChallengeRequired() {
     return this._sessionPage.url().includes('challenge');
   }
 
-  private async closeAnyHomeScreenDialogsIfNeeded() {
-    if (await this._sessionPage.$('div.fPMEg')) {
-      await this._sessionPage.tap('button.HoLwm');
+  private async challengeLogIn() {
+    const $$chooses = await this._sessionPage.$$('div.QuiLu > div');
+    let chooses = [];
+    for (const $choose of $$chooses) {
+      const $label = await $choose.$('label');
+      const innerText: string = await this._sessionPage.evaluate((label) => label.innerText, $label);
+      chooses.push(innerText);
     }
-    if (await this._sessionPage.$('section.xZ2Xk button')) {
-      await this._sessionPage.tap('section.xZ2Xk button');
+    const key = keyInSelect(chooses, 'Which method you prefer to send a security code to verify your identity?', { cancel: false });
+    if ($$chooses.length > 1) {
+      await $$chooses[key].tap();
+    }
+
+    const $sendButton = await this._sessionPage.waitForSelector('form.JraEb  button');
+    await $sendButton.tap();
+
+    const $codeInput = await this._sessionPage.waitForSelector('input[name=security_code]');
+    const code = question('[Challenge] Enter your security code: ');
+    await $codeInput.type(code, { delay: 100 });
+
+    const $submitButton = await this._sessionPage.waitForSelector('form.JraEb  button');
+
+    const [response] = await Promise.all([
+      this._sessionPage.waitForResponse((response) => response.url().includes('challenge')),
+      $submitButton.tap(),
+    ]);
+
+    if (response.status() !== 200 && response.status() !== 400) {
+      throw new Error(`Smth went wrong with challenge login request. Code: ${response.status()}`);
+    }
+
+    const { status } = await response.json();
+
+    await this._sessionPage.waitFor(3000);
+    if (status !== 'ok') {
+      throw new Error(`Smth went wrong with challenge login response. Status: ${status}`);
     }
   }
 
-  async logIn(username: string, password: string) {
+  private isTwoFactor() {
+    return this._sessionPage.url().includes('two_factor');
+  }
+
+  private async twoFactorLogIn() {
+    const $input = await this._sessionPage.$('form._3GlM_ input');
+    const code = question('[Two-factor] Enter a security code or backup code: ');
+    await $input!.type(code, { delay: 100 });
+    const $confirm = await this._sessionPage.$('form._3GlM_ button');
+    const [response] = await Promise.all([
+      this._sessionPage.waitForResponse((response) => response.url().includes('login/ajax/two_factor')),
+      $confirm!.tap(),
+    ]);
+
+    if (response.status() !== 200 && response.status() !== 400) {
+      throw new Error(`Smth went wrong with two-factor login request. Code: ${response.status()}`);
+    }
+
+    const { status } = await response.json();
+
+    await this._sessionPage.waitFor(3000);
+    if (status !== 'ok') {
+      throw new Error(`Smth went wrong with two-factor login response. Status: ${status}`)
+    }
+
+    const $saveInfo = await this._sessionPage.$('section.ABCxa button');
+    await $saveInfo!.tap();
+  }
+
+  async logIn(value: string, password: string) {
     await this._sessionPage.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
 
     if (await this.isLoggedIn()) {
@@ -45,53 +121,47 @@ export default class IGApi {
       return;
     }
 
-    await this._sessionPage.tap('button.L3NKy');
-    await this._sessionPage.waitFor(2000);
-
-    const inputs = await this._sessionPage.$$('input.zyHYP');
-    await inputs[0].type(username, { delay: 100 });
-    await inputs[1].type(password, { delay: 100 });
-
-    let $button: ElementHandle<Element> | null = null;
-    for (const $element of (await this._sessionPage.$$('button.L3NKy'))) {
-      const textContent: string = await this._sessionPage.evaluate(element => element.textContent, $element)
-      if (textContent === 'Log In') {
-        $button = $element;
-        break;
-      }
+    for (const cookie of await this._sessionPage.cookies()) {
+      await this._sessionPage.deleteCookie({
+        name: cookie.name,
+        domain: cookie.domain,
+      });
     }
+    await this._sessionPage.reload();
 
-    await Promise.all([
-      this._sessionPage.waitForNavigation({ waitUntil: 'networkidle0' }),
-      $button!.tap(),
+    const $login = await this._sessionPage.waitForSelector('div.gr27e button.L3NKy');
+    await $login.tap();
+
+    await this._sessionPage.waitFor(1000);
+    const [$input1, $input2] = await this._sessionPage.$$('form.HmktE input');
+    await $input1.type(value, { delay: 100 });
+    await $input2.type(password, { delay: 100 });
+    const $submit = await this._sessionPage.$('div.gr27e button.L3NKy[type=submit]');
+    const [response] = await Promise.all([
+      this._sessionPage.waitForResponse((response) => response.url().includes('accounts/login/ajax')),
+      $submit!.tap(),
     ]);
 
-    if (this.isChallengeRequired()) {
-      const $sendButton = await this._sessionPage.waitForSelector('form.JraEb  button');
-      await $sendButton.tap();
+    if (response.status() !== 200 && response.status() !== 400) {
+      throw new Error(`Smth went wrong with login request. Code: ${response.status()}`);
+    }
+    const { status } = await response.json();
 
-      const $codeInput = await this._sessionPage.waitForSelector('input[name=security_code]');
-      const code = question('Enter Your Security Code: ');
-      await $codeInput.type(code, { delay: 100 });
-
-      const $submitButton = await this._sessionPage.waitForSelector('form.JraEb  button');
-
-      const [response] = await Promise.all([
-        this._sessionPage.waitForResponse((response) => response.url().includes('challenge')),
-        $submitButton.tap(),
-      ]);
-
-      const {
-        challenge: {
-          errors: [
-            error,
-          ]
-        },
-        status,
-      } = await response.json();
-
-      if (status === 'fail') {
-        throw new Error(error);
+    await this._sessionPage.waitFor(3000);
+    if (status !== 'ok') {
+      if (this.isChallengeRequired()) {
+        await this.challengeLogIn();
+        if (this.isLoggedIn()) {
+          await this.closeAnyHomeScreenDialogsIfNeeded();
+        } else {
+          await this.logIn(value, password);
+        }
+        return;
+      }
+      if (this.isTwoFactor()) {
+        await this.twoFactorLogIn();
+        await this.closeAnyHomeScreenDialogsIfNeeded();
+        return;
       }
     }
   }
@@ -99,27 +169,27 @@ export default class IGApi {
   // Menu
 
   async menu(section: 'home' | 'explore' | 'upload' | 'activity' | 'profile') {
-    const menu = await this._sessionPage.$$('div.q02Nz');
-
-    if (menu.length === 0) {
-      return;
-    }
+    const $$menu = await this._sessionPage.$$('div.q02Nz');
 
     switch (section) {
       case 'home':
-        await menu[0].tap();
+        await $$menu[0].tap();
         break;
+
       case 'explore':
-        await menu[1].tap();
+        await $$menu[1].tap();
         break;
+
       case 'upload':
-        await menu[2].tap();
+        await $$menu[2].tap();
         break;
+
       case 'activity':
-        await menu[3].tap();
+        await $$menu[3].tap();
         break;
+
       case 'profile':
-        await menu[4].tap();
+        await $$menu[4].tap();
         break;
     }
 
