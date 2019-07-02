@@ -1527,7 +1527,7 @@ export default class IGApi {
   }
 
   async feedReelsQueryHash() {
-    if (this.cache.feedReelsQueryHash) {
+    if (this.cache.feedReelsQueryHash === undefined) {
       const page = await Browser.newPage();
       await page.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
       const src = await page.evaluate(() => {
@@ -1578,7 +1578,7 @@ export default class IGApi {
   }
 
   async discoverChainingQueryHash() {
-    if (this.cache.discoverChainingQueryHash) {
+    if (this.cache.discoverChainingQueryHash === undefined) {
       const src = await this._sessionPage.evaluate(() => {
         const array = [...document.querySelectorAll('script')];
         return array.find(value => value.src.includes('MediaChainingPageContainer.js'))!.src;
