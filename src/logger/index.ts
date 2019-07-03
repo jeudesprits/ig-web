@@ -17,14 +17,14 @@ const logger = createLogger({
 if (isProduction()) {
   logger.add(
     new File({
-      filename: './logs/error.log',
+      filename: 'logs/error.log',
       level: 'error',
     }),
   );
 
   logger.add(
     new File({
-      filename: './logs/combined.log',
+      filename: 'logs/combined.log',
       level: 'info',
     }),
   );
@@ -40,7 +40,7 @@ logger.add(
   new Telegram({
     token: secrets!.TG_TOKEN,
     chatId: secrets!.TG_CHANNEL_NAME,
-    pathToImage: './tmp/screenshot.jpeg',
+    pathToImage: 'tmp/screenshot.jpeg',
   }),
 );
 

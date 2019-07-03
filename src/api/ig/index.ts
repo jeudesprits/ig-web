@@ -1,7 +1,7 @@
 import { Page } from 'puppeteer';
 import Browser from '../../browser';
 import fetch from 'node-fetch';
-import querystring from 'querystring';
+import { stringify } from 'querystring';
 import { question, keyInSelect } from 'readline-sync';
 
 export default class IGApi {
@@ -281,7 +281,7 @@ export default class IGApi {
         query_hash: baseUriComponents.query_hash,
         variables: baseUriComponents.variables + `"${type}":"${currentCursor}"}`,
       };
-      const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
+      const uri = `https://www.instagram.com/graphql/query/?${stringify(uriComponents)}`;
       json = await this._sessionPage.evaluate(
         async (uri, headers, username) => {
           const response = await window.fetch(uri, {
@@ -357,7 +357,7 @@ export default class IGApi {
         username,
       )}","include_reel":true,"fetch_mutual":true,"first":24}`,
     };
-    const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
+    const uri = `https://www.instagram.com/graphql/query/?${stringify(uriComponents)}`;
     const headers = {
       Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
@@ -431,7 +431,7 @@ export default class IGApi {
         query_hash: baseUriComponents.query_hash,
         variables: baseUriComponents.variables + `"${type}":"${currentCursor}"}`,
       };
-      const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
+      const uri = `https://www.instagram.com/graphql/query/?${stringify(uriComponents)}`;
       json = await this._sessionPage.evaluate(
         async (uri, headers, username) => {
           const response = await window.fetch(uri, {
@@ -507,7 +507,7 @@ export default class IGApi {
         username,
       )}","include_reel":true,"fetch_mutual":false,"first":24}`,
     };
-    const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
+    const uri = `https://www.instagram.com/graphql/query/?${stringify(uriComponents)}`;
     const headers = {
       Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
@@ -999,7 +999,7 @@ export default class IGApi {
       query_hash: await this.feedReelsQueryHash(),
       variables: '{"only_stories":true,"stories_prefetch":true,"stories_video_dash_manifest":false}',
     };
-    const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
+    const uri = `https://www.instagram.com/graphql/query/?${stringify(uriComponents)}`;
     const headers = {
       Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
@@ -1053,7 +1053,7 @@ export default class IGApi {
           baseUriComponents.variables +
           `"fetch_media_item_cursor":"${currentCursor}",${baseUriComponents.variables_end}`,
       };
-      const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
+      const uri = `https://www.instagram.com/graphql/query/?${stringify(uriComponents)}`;
       json = await this._sessionPage.evaluate(
         async (uri, headers) => {
           const response = await window.fetch(uri, {
@@ -1141,7 +1141,7 @@ export default class IGApi {
         query_hash: baseUriComponents.query_hash,
         variables: baseUriComponents.variables + `"after":"${currentCursor}"}`,
       };
-      const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
+      const uri = `https://www.instagram.com/graphql/query/?${stringify(uriComponents)}`;
       json = await this._sessionPage.evaluate(
         async (uri, headers) => {
           const response = await window.fetch(uri, {
@@ -1196,7 +1196,7 @@ export default class IGApi {
       query_hash: await this.discoverQueryHash(),
       variables: `{"first":24}`,
     };
-    const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
+    const uri = `https://www.instagram.com/graphql/query/?${stringify(uriComponents)}`;
     const headers = {
       Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
@@ -1265,7 +1265,7 @@ export default class IGApi {
         query_hash: baseUriComponents.query_hash,
         variables: baseUriComponents.variables + `"after":"${currentCursor}"}`,
       };
-      const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
+      const uri = `https://www.instagram.com/graphql/query/?${stringify(uriComponents)}`;
       json = await this._sessionPage.evaluate(
         async (uri, headers, shortcode) => {
           const response = await window.fetch(uri, {
@@ -1323,7 +1323,7 @@ export default class IGApi {
         shortcode,
       )}","surface":"WEB_EXPLORE_MEDIA_GRID","first":12}`,
     };
-    const uri = `https://www.instagram.com/graphql/query/?${querystring.stringify(uriComponents)}`;
+    const uri = `https://www.instagram.com/graphql/query/?${stringify(uriComponents)}`;
     const headers = {
       Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
@@ -1380,7 +1380,7 @@ export default class IGApi {
       rank_token: Math.random().toString(),
       include_reel: true,
     };
-    const uri = `https://www.instagram.com/web/search/topsearch/?${querystring.stringify(uriComponents)}`;
+    const uri = `https://www.instagram.com/web/search/topsearch/?${stringify(uriComponents)}`;
     const headers = {
       Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',

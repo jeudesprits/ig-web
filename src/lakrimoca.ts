@@ -1,5 +1,5 @@
 import Browser from './browser';
-import IGApi from './api/ig/login';
+import IGApi from './api/ig';
 import logger from './logger';
 import { msleep } from './utils/helpers';
 
@@ -13,7 +13,7 @@ import { msleep } from './utils/helpers';
   try {
     await api.logIn('...', '...');
   } catch (error) {
-    await Browser.screenshot(api.sessionPage, './tmp/screenshot.jpeg');
+    await Browser.screenshot(api.sessionPage, 'tmp/screenshot.jpeg');
     logger.error(`IG Api login ${error.stack}`);
     await msleep(2000);
     await Browser.close();
@@ -41,7 +41,7 @@ import { msleep } from './utils/helpers';
         ++count;
         await api.profileUnfollow(username);
       } catch (error) {
-        await Browser.screenshot(api.sessionPage, './tmp/screenshot.jpeg');
+        await Browser.screenshot(api.sessionPage, 'tmp/screenshot.jpeg');
         logger.error(`IG Api profileUnfollow ${error.stack}`);
         await msleep(2000);
         break loop1;
