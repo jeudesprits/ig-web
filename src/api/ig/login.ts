@@ -113,7 +113,6 @@ export default class IGApi {
     await this._sessionPage.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
 
     if (await this.isLoggedIn()) {
-      await this.closeAnyHomeScreenDialogsIfNeeded();
       return;
     }
 
@@ -196,7 +195,7 @@ export default class IGApi {
 
   async profileInfo(username: string, page?: Page) {
     const currentPage = page ? page : this._sessionPage;
-    await currentPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
+    await currentPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle2' });
 
     const {
       entry_data: {
