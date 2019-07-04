@@ -1,5 +1,5 @@
 import client from './mongo/client';
-import db from './mongo';
+import db from './mongo/db';
 import { UsedPost } from './mongo/models';
 
 // tslint:disable-next-line: no-floating-promises
