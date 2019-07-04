@@ -1,7 +1,7 @@
 import { createLogger, format, transports } from 'winston';
 const { File, Console } = transports;
 const { combine, timestamp, label, printf } = format;
-import { TelegramTransport as Telegram } from './transports/tgTransport';
+import { TelegramTransport as Telegram } from './transports/tg-transport';
 import { isProduction } from '../utils/helpers';
 import secrets from '../utils/secrets';
 

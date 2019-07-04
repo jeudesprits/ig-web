@@ -1,17 +1,17 @@
-import { MongoClient } from 'mongodb';
+import { Maraquia } from 'maraquia';
+import client, { MongoClient } from './client';
 
-export default class MongoDB {
-  static client: MongoClient;
+class Db {
+  Result: Promise<void>;
 
-  static async connect() {
-    this.client = await MongoClient.connect('secrets.MONGO_URI', { useNewUrlParser: true });
-  }
+  IgDilnozochkaShodiyeva: Maraquia;
 
-  static db(dbName: string) {
-    return this.client.db(dbName);
-  }
-
-  static async close() {
-    await this.client.close();
+  constructor(client: MongoClient) {
+    this.Result = (async () => {
+      await client.Ready;
+      this.IgDilnozochkaShodiyeva = new Maraquia(client.db('ig_dilnozochka_shodiyeva'));
+    })();
   }
 }
+
+export default new Db(client);
