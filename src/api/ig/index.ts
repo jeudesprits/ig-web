@@ -5,6 +5,8 @@ import { stringify } from 'querystring';
 import { question, keyInSelect } from 'readline-sync';
 
 export default class IGApi {
+  readonly Result: Promise<void>;
+
   private _sessionPage: Page;
 
   get sessionPage() {
@@ -13,8 +15,15 @@ export default class IGApi {
 
   private cache: any = {};
 
-  async prepare() {
-    this._sessionPage = await Browser.newPage();
+  private browser: Browser;
+
+  constructor(browser: Browser) {
+    this.browser = browser;
+    this.Result = (async () => this.prepare())();
+  }
+
+  private async prepare() {
+    this._sessionPage = await this.browser.newPage();
   }
 
   // Login actions
@@ -1455,14 +1464,14 @@ export default class IGApi {
   // Utils
 
   async profileIdFromUsername(username: string): Promise<string> {
-    const page = await Browser.newPage();
+    const page = await this.browser.newPage();
     const { id } = await this.profileInfo(username, page);
     await page.close();
     return id;
   }
 
   async mediaIdFromShortcode(shortcode: string): Promise<string> {
-    const page = await Browser.newPage();
+    const page = await this.browser.newPage();
     const { id } = await this.mediaInfo(shortcode, page);
     await page.close();
     return id;
@@ -1476,7 +1485,7 @@ export default class IGApi {
 
   async instagramWebFBAppId() {
     if (this.cache.instagramWebFBAppId === undefined) {
-      const page = await Browser.newPage();
+      const page = await this.browser.newPage();
       await page.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
       const src = await page.evaluate(() => {
         const array = [...document.querySelectorAll('script')];
@@ -1493,7 +1502,7 @@ export default class IGApi {
 
   async followersQueryHash() {
     if (this.cache.followersQueryHash === undefined) {
-      const page = await Browser.newPage();
+      const page = await this.browser.newPage();
       await page.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
       const src = await page.evaluate(() => {
         const array = [...document.querySelectorAll('script')];
@@ -1510,7 +1519,7 @@ export default class IGApi {
 
   async followingQueryHash() {
     if (this.cache.followingQueryHash === undefined) {
-      const page = await Browser.newPage();
+      const page = await this.browser.newPage();
       await page.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
       const src = await page.evaluate(() => {
         const array = [...document.querySelectorAll('script')];
@@ -1527,7 +1536,7 @@ export default class IGApi {
 
   async feedReelsQueryHash() {
     if (this.cache.feedReelsQueryHash === undefined) {
-      const page = await Browser.newPage();
+      const page = await this.browser.newPage();
       await page.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
       const src = await page.evaluate(() => {
         const array = [...document.querySelectorAll('script')];
@@ -1544,7 +1553,7 @@ export default class IGApi {
 
   async feedQueryHash() {
     if (this.cache.feedQueryHash === undefined) {
-      const page = await Browser.newPage();
+      const page = await this.browser.newPage();
       await page.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
       const src = await page.evaluate(() => {
         const array = [...document.querySelectorAll('script')];
@@ -1561,7 +1570,7 @@ export default class IGApi {
 
   async discoverQueryHash() {
     if (this.cache.discoverQueryHash === undefined) {
-      const page = await Browser.newPage();
+      const page = await this.browser.newPage();
       await page.goto('https://www.instagram.com/explore/', { waitUntil: 'networkidle0' });
       const src = await page.evaluate(() => {
         const array = [...document.querySelectorAll('script')];

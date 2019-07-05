@@ -1,11 +1,15 @@
-import puppeteer from 'puppeteer';
+import { Browser as BrowserNative, Page, launch } from 'puppeteer';
 import { existsSync, mkdirSync, rmdirSync } from 'fs';
 
 export default class Browser {
-  static browser: puppeteer.Browser;
+  private _browser: BrowserNative;
 
-  static async launch() {
-    this.browser = await puppeteer.launch({
+  get browser() {
+    return this._browser;
+  }
+
+  async launch() {
+    this._browser = await launch({
       args: [
         '--no-sandbox',
         '--disable-dev-shm-usage',
@@ -24,23 +28,23 @@ export default class Browser {
       },
     });
 
-    const unnecessaryPage = (await this.browser.pages())[0];
+    const unnecessaryPage = (await this._browser.pages())[0];
     await unnecessaryPage.close();
   }
 
-  static async newPage() {
-    return this.browser.newPage();
+  async newPage() {
+    return this._browser.newPage();
   }
 
-  static async pages() {
-    return this.browser.pages();
+  async pages() {
+    return this._browser.pages();
   }
 
-  static async close() {
-    return this.browser.close();
+  async close() {
+    return this._browser.close();
   }
 
-  static async screenshot(page: puppeteer.Page, path: string) {
+  async screenshot(page: Page, path: string) {
     if (!existsSync('./tmp')) {
       mkdirSync('./tmp');
     }
@@ -52,7 +56,7 @@ export default class Browser {
     });
   }
 
-  static clean() {
+  clean() {
     if (existsSync('./chromium')) {
       rmdirSync('./chromium');
     }

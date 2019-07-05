@@ -2,7 +2,7 @@ import { MongoClient as MongoClientNative } from 'mongodb';
 import secrets from '../utils/secrets';
 
 export class MongoClient {
-  Ready: Promise<void>;
+  readonly Ready: Promise<void>;
 
   private _client: MongoClientNative;
 

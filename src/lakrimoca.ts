@@ -5,18 +5,19 @@ import { msleep } from './utils/helpers';
 
 // tslint:disable-next-line: no-floating-promises
 (async () => {
-  await Browser.launch();
+  const browser = new Browser();
+  await browser.launch();
 
-  const api = new IGApi();
-  await api.prepare();
+  const api = new IGApi(browser);
+  await api.Result;
 
   try {
     await api.logIn('...', '...');
   } catch (error) {
-    await Browser.screenshot(api.sessionPage, 'tmp/screenshot.jpeg');
+    await browser.screenshot(api.sessionPage, 'tmp/screenshot.jpeg');
     logger.error(`IG Api login ${error.stack}`);
     await msleep(2000);
-    await Browser.close();
+    await browser.close();
     return;
   }
 
@@ -41,7 +42,7 @@ import { msleep } from './utils/helpers';
         ++count;
         await api.profileUnfollow(username);
       } catch (error) {
-        await Browser.screenshot(api.sessionPage, 'tmp/screenshot.jpeg');
+        await browser.screenshot(api.sessionPage, 'tmp/screenshot.jpeg');
         logger.error(`IG Api profileUnfollow ${error.stack}`);
         await msleep(2000);
         break loop1;
@@ -51,5 +52,5 @@ import { msleep } from './utils/helpers';
     }
   }
 
-  await Browser.close();
+  await browser.close();
 })();

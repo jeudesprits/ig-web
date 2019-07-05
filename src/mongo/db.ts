@@ -2,7 +2,7 @@ import { Maraquia } from 'maraquia';
 import client, { MongoClient } from './client';
 
 class Db {
-  Result: Promise<void>;
+  readonly Result: Promise<void>;
 
   IgDilnozochkaShodiyeva: Maraquia;
 
