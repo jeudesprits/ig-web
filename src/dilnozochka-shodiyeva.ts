@@ -95,7 +95,7 @@ async function addHashtags(text: string) {
     await usedPost.save();
   } catch (error) {
     await browser.screenshot(igApi.sessionPage, 'tmp/screenshot.jpg');
-    logger.error(error.stack, { label: '@dilnozochka_shodiyeva' });
+    logger.error(error.stack, { meta: { label: '@dilnozochka_shodiyeva' } });
   } finally {
     await client.close();
     await browser.close();

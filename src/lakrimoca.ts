@@ -39,7 +39,7 @@ import { msleep } from './utils/helpers';
     }
   } catch (error) {
     await browser.screenshot(igApi.sessionPage, 'tmp/screenshot.jpg');
-    logger.error(error.stack, { label: '@lakrimoca' });
+    logger.error(error.stack, { meta: { label: '@lakrimoca' } });
   } finally {
     await browser.close();
   }
