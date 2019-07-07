@@ -122,6 +122,7 @@ export default class IGApi {
     await this._sessionPage.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
 
     if (await this.isLoggedIn()) {
+      await this.closeAnyHomeScreenDialogsIfNeeded();
       return;
     }
 
@@ -1444,7 +1445,7 @@ export default class IGApi {
     }
 
     await this._sessionPage.waitForSelector('button.UP43G');
-    await this._sessionPage.type('textarea[placeholder="Write a caption…"]', text, { delay: 200 });
+    await this._sessionPage.type('textarea[placeholder="Write a caption…"]', text, { delay: 50 });
     const [configureResponse] = await Promise.all([
       this._sessionPage.waitForResponse(response => response.url().includes('configure')),
       this._sessionPage.tap('button.UP43G'),

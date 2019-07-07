@@ -4,6 +4,7 @@ const { combine, timestamp, label, printf } = format;
 import { TelegramTransport as Telegram } from './transports/tg-transport';
 import { isProduction } from '../utils/helpers';
 import secrets from '../utils/secrets';
+const { TG_TOKEN, TG_CHANNEL_NAME } = secrets;
 
 const myFormat = printf(({ level, message, label, timestamp }) => {
   return `${timestamp} [${label}] ${level}: ${message}`;
@@ -38,8 +39,8 @@ if (isProduction()) {
 
 logger.add(
   new Telegram({
-    token: secrets!.TG_TOKEN,
-    chatId: secrets!.TG_CHANNEL_NAME,
+    token: TG_TOKEN,
+    chatId: TG_CHANNEL_NAME,
     pathToImage: 'tmp/screenshot.jpeg',
   }),
 );

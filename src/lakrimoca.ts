@@ -1,6 +1,8 @@
 import Browser from './browser';
 import IGApi from './api/ig';
 import logger from './logger';
+import secrets from './utils/secrets';
+const { L_USERNAME, L_PASSWORD } = secrets;
 import { msleep } from './utils/helpers';
 
 // tslint:disable-next-line: no-floating-promises
@@ -12,7 +14,7 @@ import { msleep } from './utils/helpers';
   await api.Result;
 
   try {
-    await api.logIn('...', '...');
+    await api.logIn(L_USERNAME, L_PASSWORD);
   } catch (error) {
     await browser.screenshot(api.sessionPage, 'tmp/screenshot.jpeg');
     logger.error(`IG Api login ${error.stack}`);
