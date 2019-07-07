@@ -1,7 +1,7 @@
 import client from './mongo/client';
 import db from './mongo/db';
 import { Profile, UsedPost, Hashtag } from './mongo/models';
-// import logger from './logger';
+import logger from './logger';
 import secrets from './utils/secrets';
 const { DS_USERNAME, DS_PASSWORD } = secrets;
 import Browser from './browser';
@@ -64,35 +64,40 @@ async function addHashtags(text: string) {
   const igApi = new IGApi(browser);
   await igApi.Result;
 
-  await igApi.logIn(DS_USERNAME, DS_PASSWORD);
+  try {
+    await igApi.logIn(DS_USERNAME, DS_PASSWORD);
 
-  await db.Result;
-  Profile.use(db.IgDilnozochkaShodiyeva);
-  UsedPost.use(db.IgDilnozochkaShodiyeva);
-  Hashtag.use(db.IgDilnozochkaShodiyeva);
+    await db.Result;
+    Profile.use(db.IgDilnozochkaShodiyeva);
+    UsedPost.use(db.IgDilnozochkaShodiyeva);
+    Hashtag.use(db.IgDilnozochkaShodiyeva);
 
-  const [profile] = await Profile.aggregate<Profile>([{ $sample: { size: 1 } }]);
-  const username = profile.uri.slice(26, -1);
-  const {
-    node: {
-      edge_media_to_caption: { edges },
-      thumbnail_resources: thumbnailResources,
-      shortcode,
-    },
-  } = await preferredPost(igApi, username);
+    const [profile] = await Profile.aggregate<Profile>([{ $sample: { size: 1 } }]);
+    const username = profile.uri.slice(26, -1);
+    const {
+      node: {
+        edge_media_to_caption: { edges },
+        thumbnail_resources: thumbnailResources,
+        shortcode,
+      },
+    } = await preferredPost(igApi, username);
 
-  const { src: imageUri } = thumbnailResources[thumbnailResources.length - 1];
-  await downloadImage(imageUri, 'tmp/upload.jpg');
+    const { src: imageUri } = thumbnailResources[thumbnailResources.length - 1];
+    await downloadImage(imageUri, 'tmp/upload.jpg');
 
-  // prettier-ignore
-  let [{ node: { text } }] = edges;
-  text = removeUsernames(text);
-  text = await addHashtags(text);
-  await igApi.uploadMedia(text, 'tmp/upload.jpg');
+    // prettier-ignore
+    let [{ node: { text } }] = edges;
+    text = removeUsernames(text);
+    text = await addHashtags(text);
+    await igApi.uploadMedia(text, 'tmp/upload.jpg');
 
-  let usedPost = new UsedPost({ uri: `https://www.instagram.com/p/${shortcode}/` });
-  await usedPost.save();
-
-  await client.close();
-  await browser.close();
+    let usedPost = new UsedPost({ uri: `https://www.instagram.com/p/${shortcode}/` });
+    await usedPost.save();
+  } catch (error) {
+    await browser.screenshot(igApi.sessionPage, 'tmp/screenshot.jpg');
+    logger.error(error.stack);
+  } finally {
+    await client.close();
+    await browser.close();
+  }
 })();

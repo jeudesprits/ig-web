@@ -41,7 +41,7 @@ logger.add(
   new Telegram({
     token: TG_TOKEN,
     chatId: TG_CHANNEL_NAME,
-    pathToImage: 'tmp/screenshot.jpeg',
+    pathToImage: 'tmp/screenshot.jpg',
   }),
 );
 
