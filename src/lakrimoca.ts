@@ -11,9 +11,9 @@ import { msleep } from './utils/helpers';
   await browser.launch();
 
   const igApi = new IGApi(browser);
-  await igApi.Result;
 
   try {
+    await igApi.Result;
     await igApi.logIn(L_USERNAME, L_PASSWORD);
 
     let count = 0;
@@ -39,7 +39,7 @@ import { msleep } from './utils/helpers';
     }
   } catch (error) {
     await browser.screenshot(igApi.sessionPage, 'tmp/screenshot.jpg');
-    logger.error(error.stack, { meta: { label: '@lakrimoca' } });
+    logger.error(error.stack, { label: 'ig-web @lakrimoca' });
   } finally {
     await browser.close();
   }

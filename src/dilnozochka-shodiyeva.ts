@@ -62,9 +62,9 @@ async function addHashtags(text: string) {
   await browser.launch();
 
   const igApi = new IGApi(browser);
-  await igApi.Result;
 
   try {
+    await igApi.Result;
     await igApi.logIn(DS_USERNAME, DS_PASSWORD);
 
     await db.Result;
@@ -95,7 +95,7 @@ async function addHashtags(text: string) {
     await usedPost.save();
   } catch (error) {
     await browser.screenshot(igApi.sessionPage, 'tmp/screenshot.jpg');
-    logger.error(error.stack, { meta: { label: '@dilnozochka_shodiyeva' } });
+    logger.error(error.stack, { label: 'ig-web @dilnozochka_shodiyeva' });
   } finally {
     await client.close();
     await browser.close();

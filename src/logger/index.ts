@@ -1,6 +1,6 @@
 import { createLogger, format, transports } from 'winston';
 const { File, Console } = transports;
-const { combine, timestamp, label, printf } = format;
+const { combine, timestamp, printf } = format;
 import { TelegramTransport as Telegram } from './transports/tg-transport';
 import { isProduction } from '../utils/helpers';
 import secrets from '../utils/secrets';
@@ -12,7 +12,7 @@ const myFormat = printf(({ level, message, label, timestamp }) => {
 
 const logger = createLogger({
   level: isProduction() ? 'info' : 'debug',
-  format: combine(label({ label: 'ig-web' }), timestamp(), myFormat),
+  format: combine(timestamp(), myFormat),
 });
 
 if (isProduction()) {
