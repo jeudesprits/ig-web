@@ -10,49 +10,37 @@ import { msleep } from './utils/helpers';
   const browser = new Browser();
   await browser.launch();
 
-  const api = new IGApi(browser);
-  await api.Result;
+  const igApi = new IGApi(browser);
+  await igApi.Result;
 
   try {
-    await api.logIn(L_USERNAME, L_PASSWORD);
-  } catch (error) {
-    await browser.screenshot(api.sessionPage, 'tmp/screenshot.jpeg');
-    logger.error(`IG Api login ${error.stack}`);
-    await msleep(2000);
-    await browser.close();
-    return;
-  }
+    await igApi.logIn(L_USERNAME, L_PASSWORD);
 
-  let count = 0;
-  loop1: for await (const data of api.profileFollowing('lakrimoca')) {
-    const {
-      data: {
-        user: {
-          edge_follow: { edges },
+    let count = 0;
+    loop: for await (const data of igApi.profileFollowing('lakrimoca')) {
+      const {
+        data: {
+          user: {
+            edge_follow: { edges },
+          },
         },
-      },
-    } = data;
+      } = data;
 
-    loop2: for (const {
-      node: { username },
-    } of edges) {
-      if (count >= 15) {
-        break loop1;
-      }
+      // prettier-ignore
+      for (const {node: { username } } of edges) {
+        if (count >= 15) {
+          break loop;
+        }
 
-      try {
         ++count;
-        await api.profileUnfollow(username);
-      } catch (error) {
-        await browser.screenshot(api.sessionPage, 'tmp/screenshot.jpeg');
-        logger.error(`IG Api profileUnfollow ${error.stack}`);
+        await igApi.profileUnfollow(username);
         await msleep(2000);
-        break loop1;
       }
-
-      await msleep(2000);
     }
+  } catch (error) {
+    await browser.screenshot(igApi.sessionPage, 'tmp/screenshot.jpg');
+    logger.error(error.stack, { label: '@lakrimoca' });
+  } finally {
+    await browser.close();
   }
-
-  await browser.close();
 })();
