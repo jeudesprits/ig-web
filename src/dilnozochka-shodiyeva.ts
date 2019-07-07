@@ -30,7 +30,7 @@ async function preferredPost(igApi: IGApi, username: string) {
       if (isVideo) {
         continue;
       }
-      if (await UsedPost.findOne<UsedPost>({ uri: `https://www.instagram.com/p/${shortcode}` })) {
+      if (await UsedPost.findOne<UsedPost>({ uri: `https://www.instagram.com/p/${shortcode}/` })) {
         continue;
       }
       return edge;
@@ -90,7 +90,7 @@ async function addHashtags(text: string) {
   text = await addHashtags(text);
   await igApi.uploadMedia(text, 'tmp/upload.jpg');
 
-  let usedPost = new UsedPost({ uri: `https://www.instagram.com/p/${shortcode}` });
+  let usedPost = new UsedPost({ uri: `https://www.instagram.com/p/${shortcode}/` });
   await usedPost.save();
 
   await client.close();
