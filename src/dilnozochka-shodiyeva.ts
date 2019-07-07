@@ -84,11 +84,8 @@ async function addHashtags(text: string) {
   const { src: imageUri } = thumbnailResources[thumbnailResources.length - 1];
   await downloadImage(imageUri, 'tmp/upload.jpg');
 
-  let [
-    {
-      node: { text },
-    },
-  ] = edges;
+  // prettier-ignore
+  let [{ node: { text } }] = edges;
   text = removeUsernames(text);
   text = await addHashtags(text);
   await igApi.uploadMedia(text, 'tmp/upload.jpg');
