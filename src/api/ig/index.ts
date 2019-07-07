@@ -118,7 +118,7 @@ export default class IGApi {
     await $saveInfo!.tap();
   }
 
-  async logIn(value: string, password: string, cleanCookie: boolean = true) {
+  async logIn(username: string, password: string, cleanCookie: boolean = true) {
     await this._sessionPage.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
 
     if (await this.isLoggedIn()) {
@@ -141,7 +141,7 @@ export default class IGApi {
 
     await this._sessionPage.waitFor(1000);
     const [$input1, $input2] = await this._sessionPage.$$('form.HmktE input');
-    await $input1.type(value, { delay: 100 });
+    await $input1.type(username, { delay: 100 });
     await $input2.type(password, { delay: 100 });
     const $submit = await this._sessionPage.$('div.gr27e button.L3NKy[type=submit]');
     const [response] = await Promise.all([
@@ -160,7 +160,7 @@ export default class IGApi {
         if (this.isLoggedIn()) {
           await this.closeAnyHomeScreenDialogsIfNeeded();
         } else {
-          await this.logIn(value, password, false);
+          await this.logIn(username, password, false);
         }
         return;
       }
@@ -170,6 +170,46 @@ export default class IGApi {
         return;
       }
     }
+  }
+
+  async logOut() {
+    await this.menu('profile');
+
+    const uri = 'https://www.instagram.com/accounts/logout/ajax/';
+    const headers = {
+      Accept: '*/*',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'X-CSRFToken': await this.csrfToken(),
+      'X-IG-App-ID': await this.instagramWebFBAppId(),
+      'X-Instagram-AJAX': await this.rolloutHash(),
+      'X-Requested-With': 'XMLHttpRequest',
+    };
+    const body = 'one_tap_app_login: 0';
+    const json = await this._sessionPage.evaluate(
+      async (uri, headers, body) => {
+        const response = await window.fetch(uri, {
+          method: 'POST',
+          mode: 'cors',
+          headers: new Headers(headers),
+          body,
+          credentials: 'include',
+          referrerPolicy: 'no-referrer-when-downgrade',
+        });
+        if (response.status !== 200) {
+          throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+        }
+        return response.json();
+      },
+      uri,
+      headers,
+      body,
+    );
+
+    if (json.status !== 'ok') {
+      throw new Error(`Response status is ${json.status}. Something went wrong.`);
+    }
+
+    return json;
   }
 
   // Menu
