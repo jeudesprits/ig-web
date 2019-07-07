@@ -72,7 +72,7 @@ async function addHashtags(text: string) {
   Hashtag.use(db.IgDilnozochkaShodiyeva);
 
   const [profile] = await Profile.aggregate<Profile>([{ $sample: { size: 1 } }]);
-  const username = profile.uri.slice(22);
+  const username = profile.uri.slice(26, -1);
   const {
     node: {
       edge_media_to_caption: { edges },
