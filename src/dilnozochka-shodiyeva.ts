@@ -25,7 +25,7 @@ async function preferredPost(igApi: IGApi, username: string) {
   for await (const { edges } of igApi.profileMedia(username)) {
     for (const edge of edges) {
       const {
-        node: { isVideo, shortcode },
+        node: { is_video: isVideo, shortcode },
       } = edge;
       if (isVideo) {
         continue;
@@ -33,7 +33,7 @@ async function preferredPost(igApi: IGApi, username: string) {
       if (await UsedPost.findOne<UsedPost>({ uri: `https://www.instagram.com/p/${shortcode}/` })) {
         continue;
       }
-      return edge;
+      return igApi.mediaInfo(shortcode);
     }
   }
 }
@@ -75,18 +75,16 @@ async function addHashtags(text: string) {
     const [profile] = await Profile.aggregate<Profile>([{ $sample: { size: 1 } }]);
     const username = profile.uri.slice(26, -1);
     const {
-      node: {
-        edge_media_to_caption: { edges },
-        thumbnail_resources: thumbnailResources,
-        shortcode,
-      },
+      edge_media_to_caption: edgeMediaToCaption,
+      display_resources: displayResources,
+      shortcode,
     } = await preferredPost(igApi, username);
 
-    const { src: imageUri } = thumbnailResources[thumbnailResources.length - 1];
+    const { src: imageUri } = displayResources[displayResources.length - 1];
     await downloadImage(imageUri, 'tmp/upload.jpg');
 
     // prettier-ignore
-    let [{ node: { text } }] = edges;
+    let { edges: [{ node: { text } }] } = edgeMediaToCaption;
     text = removeUsernames(text);
     text = await addHashtags(text);
     await igApi.uploadMedia(text, 'tmp/upload.jpg');
