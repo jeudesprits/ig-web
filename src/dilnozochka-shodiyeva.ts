@@ -53,7 +53,7 @@ async function addHashtags(text: string) {
     const hashtags = await Hashtag.aggregate<Hashtag>([{ $sample: { size: 30 - count } }]);
     hashtags.forEach(hashtag => (text += `${hashtag.hashtag} `));
   } else if (count > 30) {
-    text += '\n.\n.\n.\n';
+    text = '\n.\n.\n.\n';
     const hashtags = await Hashtag.aggregate<Hashtag>([{ $sample: { size: 30 } }]);
     hashtags.forEach(hashtag => (text += `${hashtag.hashtag} `));
   }
