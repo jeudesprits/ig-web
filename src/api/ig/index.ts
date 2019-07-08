@@ -1473,7 +1473,10 @@ export default class IGApi {
 
     await this._sessionPage.waitForSelector('button.UP43G');
     if (expand) {
-      await this._sessionPage.tap('button.pHnkA');
+      const $expandButton = await this._sessionPage.$('button.pHnkA');
+      if ($expandButton) {
+        await $expandButton.tap();
+      }
     }
     const [fbUploadResponse] = await Promise.all([
       this._sessionPage.waitForResponse(response => response.url().includes('fb_uploader')),
