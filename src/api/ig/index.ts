@@ -1465,13 +1465,16 @@ export default class IGApi {
 
   // Upload action
 
-  async uploadMedia(text: string, path: string) {
+  async uploadMedia(text: string, path: string, expand: boolean = true) {
     await this._sessionPage.goto('https://www.instagram.com/', { waitUntil: 'networkidle0' });
 
     await this.menu('upload');
     await (await this._sessionPage.$('nav.NXc7H.f11OC input'))!.uploadFile(path);
 
     await this._sessionPage.waitForSelector('button.UP43G');
+    if (expand) {
+      await this._sessionPage.tap('button.pHnkA');
+    }
     const [fbUploadResponse] = await Promise.all([
       this._sessionPage.waitForResponse(response => response.url().includes('fb_uploader')),
       this._sessionPage.tap('button.UP43G'),
