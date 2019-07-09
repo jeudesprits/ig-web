@@ -90,7 +90,7 @@ async function addHashtags(text: string) {
     let caption: string;
     try {
       // prettier-ignore
-      const {edges: [{node: { text } }] } = edgeMediaToCaption;
+      const { edges: [{node: { text } }] } = edgeMediaToCaption;
       caption = text;
     } catch {
       caption = '';
