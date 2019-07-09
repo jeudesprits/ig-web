@@ -87,11 +87,17 @@ async function addHashtags(text: string) {
     const { src: imageUri } = displayResources[displayResources.length - 1];
     await downloadImage(imageUri, 'tmp/upload.jpg');
 
-    // prettier-ignore
-    let { edges: [{ node: { text } }] } = edgeMediaToCaption;
-    text = removeUsernames(text);
-    text = await addHashtags(text);
-    await igApi.uploadMedia(text, 'tmp/upload.jpg');
+    let caption: string;
+    try {
+      // prettier-ignore
+      const {edges: [{node: { text } }] } = edgeMediaToCaption;
+      caption = text;
+    } catch {
+      caption = '';
+    }
+    caption = removeUsernames(caption);
+    caption = await addHashtags(caption);
+    await igApi.uploadMedia(caption, 'tmp/upload.jpg');
 
     let usedPost = new UsedPost({ uri: `https://www.instagram.com/p/${shortcode}/` });
     await usedPost.save();
