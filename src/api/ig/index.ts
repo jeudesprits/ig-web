@@ -1463,6 +1463,192 @@ export default class IGApi {
     return json;
   }
 
+  private async *_hashtagFeedBase(tag: string, cursor: string) {
+    let json;
+    let currentCursor = cursor;
+
+    const baseUriComponents = {
+      query_hash: await this.hashtagFeedQueryHash(),
+      variables: `{"tag_name":"${tag}","first":5,"after":`,
+    };
+    const headers = {
+      Accept: '*/*',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'X-Ig-App-Id': await this.instagramWebFBAppId(),
+      'X-Requested-With': 'XMLHttpRequest',
+    };
+
+    do {
+      const uriComponents = {
+        query_hash: baseUriComponents.query_hash,
+        variables: baseUriComponents.variables + `"${currentCursor}"}`,
+      };
+      const uri = `https://www.instagram.com/graphql/query/?${stringify(uriComponents)}`;
+      json = await this._sessionPage.evaluate(
+        async (uri, headers, tag) => {
+          const response = await window.fetch(uri, {
+            method: 'GET',
+            mode: 'cors',
+            headers: new Headers(headers),
+            credentials: 'include',
+            referrer: `https://www.instagram.com/explore/tags/${tag}/`,
+            referrerPolicy: 'no-referrer-when-downgrade',
+          });
+          if (response.status !== 200) {
+            throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+          }
+          return response.json();
+        },
+        uri,
+        headers,
+        tag,
+      );
+
+      if (json.status !== 'ok') {
+        throw new Error(`Response status is ${json.status}. Something went wrong.`);
+      }
+
+      yield json;
+
+      const {
+        data: {
+          hashtag: {
+            edge_hashtag_to_media: {
+              page_info: { end_cursor: newCursor, has_next_page: hasNext },
+            },
+          },
+        },
+      } = json;
+
+      if (!hasNext) {
+        break;
+      }
+
+      currentCursor = newCursor;
+
+      await this._sessionPage.waitFor(2000);
+    } while (true);
+  }
+
+  async *hashtagFeed(tag: string) {
+    await this._sessionPage.goto(`https://www.instagram.com/explore/tags/${tag}/`, { waitUntil: 'networkidle0' });
+
+    const {
+      entry_data: {
+        TagPage: [
+          {
+            graphql: { hashtag },
+          },
+        ],
+      },
+    } = await this._sessionPage.evaluate('window._sharedData');
+
+    yield hashtag;
+
+    const {
+      edge_hashtag_to_media: {
+        page_info: { end_cursor: newCursor, has_next_page: hasNext },
+      },
+    } = hashtag;
+
+    if (hasNext) {
+      yield* this._hashtagFeedBase(tag, newCursor);
+    }
+  }
+
+  private async *_locationFeedBase(locationId: string, cursor: string) {
+    let json;
+    let currentCursor = cursor;
+
+    const baseUriComponents = {
+      query_hash: await this.locationFeedQueryHash(),
+      variables: `{"id":"${locationId}","first":12,"after":`,
+    };
+    const headers = {
+      Accept: '*/*',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'X-Ig-App-Id': await this.instagramWebFBAppId(),
+      'X-Requested-With': 'XMLHttpRequest',
+    };
+
+    do {
+      const uriComponents = {
+        query_hash: baseUriComponents.query_hash,
+        variables: baseUriComponents.variables + `"${currentCursor}"}`,
+      };
+      const uri = `https://www.instagram.com/graphql/query/?${stringify(uriComponents)}`;
+      json = await this._sessionPage.evaluate(
+        async (uri, headers, locationId) => {
+          const response = await window.fetch(uri, {
+            method: 'GET',
+            mode: 'cors',
+            headers: new Headers(headers),
+            credentials: 'include',
+            referrer: `https://www.instagram.com/explore/locations/${locationId}/`,
+            referrerPolicy: 'no-referrer-when-downgrade',
+          });
+          if (response.status !== 200) {
+            throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+          }
+          return response.json();
+        },
+        uri,
+        headers,
+        locationId,
+      );
+
+      if (json.status !== 'ok') {
+        throw new Error(`Response status is ${json.status}. Something went wrong.`);
+      }
+
+      yield json;
+
+      const {
+        data: {
+          location: {
+            edge_location_to_media: {
+              page_info: { end_cursor: newCursor, has_next_page: hasNext },
+            },
+          },
+        },
+      } = json;
+
+      if (!hasNext) {
+        break;
+      }
+
+      currentCursor = newCursor;
+
+      await this._sessionPage.waitFor(2000);
+    } while (true);
+  }
+
+  async *locationFeed(locationId: string) {
+    await this._sessionPage.goto(`https://www.instagram.com/explore/locations/${locationId}/`, { waitUntil: 'networkidle0' });
+
+    const {
+      entry_data: {
+        LocationsPage: [
+          {
+            graphql: { location },
+          },
+        ],
+      },
+    } = await this._sessionPage.evaluate('window._sharedData');
+
+    yield location;
+
+    const {
+      edge_location_to_media: {
+        page_info: { end_cursor: newCursor, has_next_page: hasNext },
+      },
+    } = location;
+
+    if (hasNext) {
+      yield* this._locationFeedBase(locationId, newCursor);
+    }
+  }
+
   // Upload action
 
   async uploadMedia(text: string, path: string, expand: boolean = true) {
@@ -1613,6 +1799,40 @@ export default class IGApi {
     }
 
     return this.cache.feedQueryHash;
+  }
+
+  async hashtagFeedQueryHash() {
+    if (this.cache.hashtagFeedQueryHash === undefined) {
+      const page = await this.browser.newPage();
+      await page.goto('https://www.instagram.com/explore/tags/love/', { waitUntil: 'networkidle0' });
+      const src = await page.evaluate(() => {
+        const array = [...document.querySelectorAll('script')];
+        return array.find(value => value.src.includes('TagPageContainer.js'))!.src;
+      });
+      await page.close();
+      const response = await fetch(src);
+      const [, hash] = (await response.text()).match(/tagMedia.+?"(.+?)"/)!;
+      this.cache.hashtagFeedQueryHash = hash;
+    }
+
+    return this.cache.hashtagFeedQueryHash;
+  }
+
+  async locationFeedQueryHash() {
+    if (this.cache.locationFeedQueryHash === undefined) {
+      const page = await this.browser.newPage();
+      await page.goto('https://www.instagram.com/explore/locations/3001373/', { waitUntil: 'networkidle0' });
+      const src = await page.evaluate(() => {
+        const array = [...document.querySelectorAll('script')];
+        return array.find(value => value.src.includes('LocationPageContainer.js'))!.src;
+      });
+      await page.close();
+      const response = await fetch(src);
+      const [, hash] = (await response.text()).match(/byLocationId.+?"(.+?)"/)!;
+      this.cache.locationFeedQueryHash = hash;
+    }
+
+    return this.cache.locationFeedQueryHash;
   }
 
   async discoverQueryHash() {

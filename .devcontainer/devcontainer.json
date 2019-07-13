@@ -7,5 +7,6 @@
 		"ms-azuretools.vscode-cosmosdb",
 		"visualstudioexptteam.vscodeintellicode",
 		"mutantdino.resourcemonitor",
+		"esbenp.prettier-vscode"
 	]
 }
