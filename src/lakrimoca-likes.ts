@@ -3,6 +3,9 @@ import IGApi from './api/ig';
 import logger from './logger';
 import secrets from './utils/secrets';
 const { L_USERNAME, L_PASSWORD } = secrets;
+import { msleep } from './utils/helpers';
+
+const locationIds = ['1882782758637550', '236070306', '272469341', '231385413'];
 
 // tslint:disable-next-line: no-floating-promises
 (async () => {
@@ -14,13 +17,31 @@ const { L_USERNAME, L_PASSWORD } = secrets;
   try {
     await igApi.Result;
     await igApi.logIn(L_USERNAME, L_PASSWORD);
-    let i = 0;
-    for await (const portion of igApi.locationFeed('3001373')) {
-      if (i > 3) {
-        break;
+
+    let count = 0;
+    const randomLocationId = locationIds[Math.floor(Math.random() * locationIds.length)];
+
+    outerLoop: for await (const data of igApi.locationFeed(randomLocationId)) {
+      // prettier-ignore
+      const { edge_location_to_media: { edges } } = data;
+
+      // prettier-ignore
+      for (const {node: { shortcode } } of edges) {
+        if (count >= 15) {
+          break outerLoop;
+        }
+
+        try {
+          await igApi.mediaLike(shortcode);
+        } catch {
+          continue;
+        }
+
+        console.log(shortcode);
+        
+        ++count;
+        await msleep(2000);
       }
-      console.log(portion);
-      ++i;
     }
   } catch (error) {
     await browser.screenshot(igApi.sessionPage, 'tmp/screenshot.jpg');

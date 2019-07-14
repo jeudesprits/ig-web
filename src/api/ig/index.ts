@@ -1508,17 +1508,17 @@ export default class IGApi {
         throw new Error(`Response status is ${json.status}. Something went wrong.`);
       }
 
-      yield json;
+      const {
+        data: { hashtag },
+      } = json;
+
+      yield hashtag;
 
       const {
-        data: {
-          hashtag: {
-            edge_hashtag_to_media: {
-              page_info: { end_cursor: newCursor, has_next_page: hasNext },
-            },
-          },
+        edge_hashtag_to_media: {
+          page_info: { end_cursor: newCursor, has_next_page: hasNext },
         },
-      } = json;
+      } = hashtag;
 
       if (!hasNext) {
         break;
@@ -1601,17 +1601,17 @@ export default class IGApi {
         throw new Error(`Response status is ${json.status}. Something went wrong.`);
       }
 
-      yield json;
+      const {
+        data: { location },
+      } = json;
+
+      yield location;
 
       const {
-        data: {
-          location: {
-            edge_location_to_media: {
-              page_info: { end_cursor: newCursor, has_next_page: hasNext },
-            },
-          },
+        edge_location_to_media: {
+          page_info: { end_cursor: newCursor, has_next_page: hasNext },
         },
-      } = json;
+      } = location;
 
       if (!hasNext) {
         break;
@@ -1624,7 +1624,9 @@ export default class IGApi {
   }
 
   async *locationFeed(locationId: string) {
-    await this._sessionPage.goto(`https://www.instagram.com/explore/locations/${locationId}/`, { waitUntil: 'networkidle0' });
+    await this._sessionPage.goto(`https://www.instagram.com/explore/locations/${locationId}/`, {
+      waitUntil: 'networkidle0',
+    });
 
     const {
       entry_data: {
