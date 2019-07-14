@@ -36,8 +36,6 @@ const locationIds = ['1882782758637550', '236070306', '272469341', '231385413'];
         } catch {
           continue;
         }
-
-        console.log(shortcode);
         
         ++count;
         await msleep(2000);
