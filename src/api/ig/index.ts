@@ -931,9 +931,7 @@ export default class IGApi {
     }
 
     const [response] = await Promise.all([
-      page.waitForResponse(
-        response => response.url().includes('/like/') || response.url().includes('/unlike/'),
-      ),
+      page.waitForResponse(response => response.url().includes('/like/') || response.url().includes('/unlike/')),
       $span!.tap(),
     ]);
     if (response.status() === 400) {
@@ -1571,8 +1569,8 @@ export default class IGApi {
     };
     const headers = {
       Accept: '*/*',
-      'Accept-Language': 'en-US,en;q=0.9',
-      'X-Ig-App-Id': await this.instagramWebFBAppId(),
+      'Accept-Language': 'en-us',
+      'X-IG-App-ID': await this.instagramWebFBAppId(),
       'X-Requested-With': 'XMLHttpRequest',
     };
 
