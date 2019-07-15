@@ -915,32 +915,37 @@ export default class IGApi {
   }
 
   private async _mediaLikeUnlikeBase(type: 'like' | 'unlike', shortcode: string) {
-    await this._sessionPage.goto(`https://www.instagram.com/p/${shortcode}/`, { waitUntil: 'networkidle0' });
+    const page = await this.browser.newPage();
+    await page.goto(`https://www.instagram.com/p/${shortcode}/`, { waitUntil: 'networkidle0' });
 
-    const $span = await this._sessionPage.$('span.fr66n > button.afkep > span');
+    const $span = await page.$('span.fr66n > button.afkep > span');
     if (
-      await this._sessionPage.evaluate(
+      await page.evaluate(
         (span, type) => span.attributes['aria-label'].textContent !== `${type.charAt(0).toUpperCase()}${type.slice(1)}`,
         $span,
         type,
       )
     ) {
+      await page.close();
       throw new Error(`Can't ${type} ${type}d post.`);
     }
 
     const [response] = await Promise.all([
-      this._sessionPage.waitForResponse(
+      page.waitForResponse(
         response => response.url().includes('/like/') || response.url().includes('/unlike/'),
       ),
       $span!.tap(),
     ]);
     if (response.status() === 400) {
+      await page.close();
       throw new Error('You’re Temporarily Blocked.');
     }
     if (response.status() !== 200) {
+      await page.close();
       throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
     }
 
+    await page.close();
     return response.json();
   }
 
@@ -1595,7 +1600,7 @@ export default class IGApi {
           }
           if (response.status !== 200) {
             // tslint:disable-next-line: no-string-throw
-            throw `Response code is ${response.statusText}. Something went wrong.`;
+            throw `Response code is ${response.status}. Something went wrong.`;
           }
           return response.json();
         },
