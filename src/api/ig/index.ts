@@ -1579,16 +1579,23 @@ export default class IGApi {
       const uri = `https://www.instagram.com/graphql/query/?${stringify(uriComponents)}`;
       json = await this._sessionPage.evaluate(
         async (uri, headers, locationId) => {
-          const response = await window.fetch(uri, {
-            method: 'GET',
-            mode: 'cors',
-            headers: new Headers(headers),
-            credentials: 'include',
-            referrer: `https://www.instagram.com/explore/locations/${locationId}/`,
-            referrerPolicy: 'no-referrer-when-downgrade',
-          });
+          let response;
+          try {
+            response = await window.fetch(uri, {
+              method: 'GET',
+              mode: 'cors',
+              headers: new Headers(headers),
+              credentials: 'include',
+              referrer: `https://www.instagram.com/explore/locations/${locationId}/`,
+              referrerPolicy: 'no-referrer-when-downgrade',
+            });
+          } catch (error) {
+            // tslint:disable-next-line: no-string-throw
+            throw error.message;
+          }
           if (response.status !== 200) {
-            throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+            // tslint:disable-next-line: no-string-throw
+            throw `Response code is ${response.statusText}. Something went wrong.`;
           }
           return response.json();
         },

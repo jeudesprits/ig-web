@@ -5,7 +5,16 @@ import secrets from './utils/secrets';
 const { L_USERNAME, L_PASSWORD } = secrets;
 import { msleep } from './utils/helpers';
 
-const locationIds = ['1882782758637550', '236070306', '272469341', '231385413'];
+const locationIds = [
+  '1882782758637550',
+  '236070306',
+  '272469341',
+  '231385413',
+  '218095884',
+  '651208945298436',
+  '177616796220644',
+  '20973489',
+];
 
 // tslint:disable-next-line: no-floating-promises
 (async () => {
