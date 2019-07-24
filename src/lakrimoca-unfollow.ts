@@ -5,17 +5,6 @@ import secrets from './utils/secrets';
 const { L_USERNAME, L_PASSWORD } = secrets;
 import { msleep } from './utils/helpers';
 
-const locationIds = [
-    '1882782758637550',
-    '236070306',
-    '272469341',
-    '231385413',
-    '218095884',
-    '651208945298436',
-    '177616796220644',
-    '20973489',
-];
-
 // tslint:disable-next-line: no-floating-promises
 (async () => {
     const browser = new Browser();
@@ -28,25 +17,23 @@ const locationIds = [
         await igApi.logIn(L_USERNAME, L_PASSWORD);
 
         let count = 0;
-        const randomLocationId = locationIds[Math.floor(Math.random() * locationIds.length)];
+        loop: for await (const data of igApi.profileFollowing('lakrimoca')) {
+            const {
+                data: {
+                    user: {
+                        edge_follow: { edges },
+                    },
+                },
+            } = data;
 
-        outerLoop: for await (const data of igApi.locationFeed(randomLocationId)) {
             // prettier-ignore
-            const { edge_location_to_media: { edges } } = data;
-
-            // prettier-ignore
-            for (const {node: { shortcode } } of edges) {
+            for (const {node: { username } } of edges) {
         if (count >= 15) {
-          break outerLoop;
+          break loop;
         }
 
-        try {
-          await igApi.mediaLike(shortcode);
-        } catch {
-          continue;
-        }
-        
         ++count;
+        await igApi.profileUnfollow(username);
         await msleep(2000);
       }
         }

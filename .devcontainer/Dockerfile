@@ -6,9 +6,8 @@ RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | APT_KEY
     && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
     && apt-get update \
     && apt-get install -y --no-install-recommends apt-utils 2>&1 \ 
-    && apt-get install -y git procps \
-    && apt-get install -y google-chrome-unstable --no-install-recommends \
-    && apt-get install -y zsh \
+    && apt-get install -y git procps zsh \
+    && apt-get install -y --no-install-recommends google-chrome-unstable \
     && wget https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh -O - | zsh || true \
     && apt-get autoremove -y \
     && apt-get clean -y \

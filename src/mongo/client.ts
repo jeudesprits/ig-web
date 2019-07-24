@@ -3,29 +3,29 @@ import secrets from '../utils/secrets';
 const { MONGO_URI } = secrets;
 
 export class MongoClient {
-  readonly Ready: Promise<void>;
+    readonly Ready: Promise<void>;
 
-  private _client: MongoClientNative;
+    private _client: MongoClientNative;
 
-  get client() {
-    return this._client;
-  }
+    get client() {
+        return this._client;
+    }
 
-  constructor() {
-    this.Ready = (async () => this.connect())();
-  }
+    constructor() {
+        this.Ready = (async () => this.connect())();
+    }
 
-  private async connect() {
-    this._client = await MongoClientNative.connect(MONGO_URI, { useNewUrlParser: true });
-  }
+    private async connect() {
+        this._client = await MongoClientNative.connect(MONGO_URI, { useNewUrlParser: true });
+    }
 
-  async close() {
-    await this._client.close();
-  }
+    async close() {
+        await this._client.close();
+    }
 
-  db(dbName: string) {
-    return this._client.db(dbName);
-  }
+    db(dbName: string) {
+        return this._client.db(dbName);
+    }
 }
 
 export default new MongoClient();
