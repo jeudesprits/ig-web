@@ -956,8 +956,10 @@ export default class IGApi {
             throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
         }
 
+        const json = await response.json();
         await page.close();
-        return response.json();
+
+        return json;
     }
 
     async mediaLike(shortcode: string) {
