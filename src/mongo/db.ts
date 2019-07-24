@@ -6,10 +6,13 @@ class Db {
 
     IgDilnozochkaShodiyeva: Maraquia;
 
+    IgLakrimoca: Maraquia;
+
     constructor(client: MongoClient) {
         this.Result = (async () => {
             await client.Ready;
             this.IgDilnozochkaShodiyeva = new Maraquia(client.db('ig_dilnozochka_shodiyeva'));
+            this.IgLakrimoca = new Maraquia(client.db('ig_lakrimoca'));
         })();
     }
 }
