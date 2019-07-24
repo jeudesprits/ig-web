@@ -24,16 +24,17 @@ import { msleep } from './utils/helpers';
         Comment.use(db.IgLakrimoca);
 
         // prettier-ignore
-        const {
-            discoverChainingPostShortcode,
-            discoverChainingLastCursor,
-        } = (await CollectionOfOne.findOne<CollectionOfOne>({}))!;
+        const collectionOfOne = (await CollectionOfOne.findOne<CollectionOfOne>({}))!;
+        const { discoverChainingPostShortcode, discoverChainingLastCursor } = collectionOfOne;
 
         const {
             value: {
                 data: {
                     user: {
-                        edge_web_media_chaining: { page_info: pageInfo, edges },
+                        edge_web_media_chaining: {
+                            page_info: { end_cursor: endCursor },
+                            edges,
+                        },
                     },
                 },
             },
@@ -44,8 +45,6 @@ import { msleep } from './utils/helpers';
             )
             .next();
 
-        console.log(pageInfo);
-        console.log(edges.length);
         for (const {
             node: {
                 comments_disabled: commentsDisabled,
@@ -53,13 +52,9 @@ import { msleep } from './utils/helpers';
                 shortcode,
             },
         } of edges) {
-            console.log(shortcode);
-
             if (commentsDisabled) {
                 continue;
             }
-
-            console.log(commentEdges.length);
 
             for (const {
                 node: {
@@ -88,8 +83,7 @@ import { msleep } from './utils/helpers';
                     } = await igApi.profileMedia(username).next();
                     likePostShortcode = shortcode;
                     commentsDisabled = comments_disabled;
-                } catch (error) {
-                    console.error(error);
+                } catch {
                     continue;
                 }
 
@@ -99,18 +93,19 @@ import { msleep } from './utils/helpers';
 
                 try {
                     await igApi.mediaLike(likePostShortcode);
-                } catch (error) {
-                    console.error(error);
+                } catch {
                     continue;
                 }
 
                 const [comment] = await Comment.find<Comment>({}, null, { limit: 1, skip: Math.random() * 9 });
                 await igApi.mediaComment(likePostShortcode, comment.text);
-
-                console.log('Well done! Go next...');
             }
+
             await msleep(2000);
         }
+
+        collectionOfOne.setField('discoverChainingLastCursor', endCursor);
+        await collectionOfOne.save();
     } catch (error) {
         await browser.screenshot(igApi.sessionPage, 'tmp/screenshot.jpg');
         logger.error(error.stack, { label: 'ig-web @lakrimoca' });
