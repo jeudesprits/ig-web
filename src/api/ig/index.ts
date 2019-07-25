@@ -769,7 +769,7 @@ export default class IGApi {
                 });
                 if (response.status !== 200) {
                     // tslint:disable-next-line: no-string-throw
-                    throw `Response code is ${response.status}. Something went wrong.`;
+                    throw `Response code is ${response.status}. Something went wrong: ${await response.text()}`;
                 }
                 return response.json();
             },
