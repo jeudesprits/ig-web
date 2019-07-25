@@ -768,7 +768,8 @@ export default class IGApi {
                     referrerPolicy: 'no-referrer-when-downgrade',
                 });
                 if (response.status !== 200) {
-                    throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+                    // tslint:disable-next-line: no-string-throw
+                    throw `Response code is ${response.status}. Something went wrong.`;
                 }
                 return response.json();
             },
@@ -811,7 +812,8 @@ export default class IGApi {
                     referrerPolicy: 'no-referrer-when-downgrade',
                 });
                 if (response.status !== 200) {
-                    throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+                    // tslint:disable-next-line: no-string-throw
+                    throw `Response code is ${response.status}. Something went wrong.`;
                 }
                 return response.json();
             },
