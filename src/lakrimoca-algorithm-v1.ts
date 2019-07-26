@@ -67,7 +67,11 @@ import { msleep } from './utils/helpers';
                     continue;
                 }
 
+                await msleep(2000);
+
                 await igApi.mediaCommentLike(shortcode, id);
+
+                await msleep(2000);
 
                 let likePostShortcode;
                 let commentsDisabled;
@@ -87,6 +91,8 @@ import { msleep } from './utils/helpers';
                     continue;
                 }
 
+                await msleep(2000);
+
                 if (commentsDisabled) {
                     continue;
                 }
@@ -97,8 +103,16 @@ import { msleep } from './utils/helpers';
                     continue;
                 }
 
+                await msleep(2000);
+
                 const [comment] = await Comment.find<Comment>({}, null, { limit: 1, skip: Math.random() * 9 });
-                await igApi.mediaComment(likePostShortcode, comment.text);
+                try {
+                    await igApi.mediaComment(likePostShortcode, comment.text);
+                } catch {
+                    continue;
+                }
+
+                logger.info('Succes!', { label: 'ig-web @lakrimoca' });
             }
 
             await msleep(2000);
