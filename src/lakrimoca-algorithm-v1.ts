@@ -69,7 +69,12 @@ import { msleep } from './utils/helpers';
 
                 await msleep(2000);
 
-                await igApi.mediaCommentLike(shortcode, id);
+                try {
+                    await igApi.mediaCommentLike(shortcode, id);
+                } catch (error) {
+                    logger.error(error.stack, { label: 'ig-web @lakrimoca' });
+                    continue;
+                }
 
                 await msleep(2000);
 
@@ -87,7 +92,8 @@ import { msleep } from './utils/helpers';
                     } = await igApi.profileMedia(username).next();
                     likePostShortcode = shortcode;
                     commentsDisabled = comments_disabled;
-                } catch {
+                } catch(error) {
+                    logger.error(error.stack, { label: 'ig-web @lakrimoca' });
                     continue;
                 }
 
@@ -99,7 +105,8 @@ import { msleep } from './utils/helpers';
 
                 try {
                     await igApi.mediaLike(likePostShortcode);
-                } catch {
+                } catch (error) {
+                    logger.error(error.stack, { label: 'ig-web @lakrimoca' });
                     continue;
                 }
 
@@ -108,7 +115,8 @@ import { msleep } from './utils/helpers';
                 const [comment] = await Comment.find<Comment>({}, null, { limit: 1, skip: Math.random() * 9 });
                 try {
                     await igApi.mediaComment(likePostShortcode, comment.text);
-                } catch {
+                } catch (error) {
+                    logger.error(error.stack, { label: 'ig-web @lakrimoca' });
                     continue;
                 }
 
