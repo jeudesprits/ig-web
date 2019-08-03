@@ -1,9 +1,9 @@
 {
 	"name": "ig-web",
 	"dockerFile": "Dockerfile",
-	"workspaceMount": "src=/Users/jeudesprits/Developer/ig-web,dst=/workspace,type=bind,consistency=cached",
-	"workspaceFolder": "/workspace",
-	"postCreateCommand": "npm install",
+	"workspaceMount": "src=/Users/jeudesprits/Developer/ig-web,dst=/home/node/workspace,type=bind,consistency=cached",
+	"workspaceFolder": "/home/node/workspace",
+	"postCreateCommand": "npm i",
 	"extensions": [
 		"ms-vscode.vscode-typescript-tslint-plugin",
 		"ms-azuretools.vscode-cosmosdb",
