@@ -4,7 +4,6 @@
 chromium
 dist
 node_modules
-tmp
 Dockerfile
 .dockerignore
 .git

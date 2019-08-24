@@ -1,4 +1,6 @@
-import { Browser as BrowserNative, Page, launch } from 'puppeteer';
+import { Browser as BrowserNative, Page } from 'puppeteer';
+const puppeteer = require('puppeteer-extra');
+const pluginStealth = require('puppeteer-extra-plugin-stealth');
 import { existsSync, mkdirSync, rmdirSync } from 'fs';
 
 export default class Browser {
@@ -9,7 +11,9 @@ export default class Browser {
     }
 
     async launch() {
-        this._browser = await launch({
+        puppeteer.use(pluginStealth());
+
+        this._browser = await puppeteer.launch({
             args: [
                 '--no-sandbox',
                 '--disable-dev-shm-usage',
@@ -17,7 +21,7 @@ export default class Browser {
                 '--user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 12_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1.1 Mobile/15E148 Safari/604.1',
             ],
             headless: true,
-            userDataDir: 'chromium',
+            userDataDir: './chromium',
             defaultViewport: {
                 width: 414,
                 height: 896,
