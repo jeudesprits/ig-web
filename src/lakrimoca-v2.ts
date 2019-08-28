@@ -24,7 +24,8 @@ cron.schedule('*/15 * * * *', async () => {
     try {
         await igApi.logIn(L_USERNAME, L_PASSWORD);
     } catch (error) {
-        logger.error(error.stack, { label: `ig-web ${L_USERNAME}` });
+        await browser.screenshot(igApi.sessionPage, './tmp/screenshot.jpg');
+        logger.error(error.stack, { label: `ig-web @${L_USERNAME}` });
         await browser.close();
         await client.close();
     }
@@ -50,12 +51,22 @@ cron.schedule('*/15 * * * *', async () => {
 
                 if (commentsDisabled) { continue; }
 
-                const visitedPost = await VisitedPost.findOne<VisitedPost>({ shortcode });
-                if (visitedPost && !visitedPost.commentsHasNext) { continue; }
+                let visitedPost = await VisitedPost.findOne<VisitedPost>({ shortcode });
+                if (visitedPost) {
+                    if (!visitedPost.commentsHasNext) { continue };
+                } else {
+                    visitedPost = new VisitedPost({
+                        shortcode,
+                        commentsHasNext: true,
+                    });
+                    await visitedPost.save();
+                }
 
                 for await (const commentsPortion of igApi.mediaComments(shortcode)) {
 
                     const { edges, page_info: pageInfo } = commentsPortion;
+                    const { has_next_page: hasNextPage } = pageInfo;
+
                     for (const edge of edges) {
 
                         const {
@@ -67,12 +78,7 @@ cron.schedule('*/15 * * * *', async () => {
                         } = edge;
 
                         if (currentFollows >= FOLLOW_LIMIT) {
-                            const { has_next_page: hasNextPage } = pageInfo;
-
-                            const visitedPost = new VisitedPost({
-                                shortcode,
-                                commentsHasNext: hasNextPage,
-                            });
+                            visitedPost.setField('commentsHasNext', hasNextPage);
                             await visitedPost.save();
 
                             break outerLoop;
@@ -100,20 +106,18 @@ cron.schedule('*/15 * * * *', async () => {
                         await following.save();
 
                         ++currentFollows;
+
+                        await msleep(2000);
                     }
 
-                    const { has_next_page: hasNextPage } = pageInfo;
-
-                    const visitedPost = new VisitedPost({
-                        shortcode,
-                        commentsHasNext: hasNextPage,
-                    });
+                    visitedPost.setField('commentsHasNext', hasNextPage);
                     await visitedPost.save();
                 }
             }
         }
     } catch (error) {
-        logger.error(error.stack);
+        await browser.screenshot(igApi.sessionPage, './tmp/screenshot.jpg');
+        logger.error(error.stack, { label: `ig-web @${L_USERNAME}` });
     } finally {
         await browser.close();
         await client.close();
@@ -133,7 +137,8 @@ cron.schedule('50 23 * * *', async () => {
     try {
         await igApi.logIn(L_USERNAME, L_PASSWORD);
     } catch (error) {
-        logger.error(error.stack, { label: `ig-web ${L_USERNAME}` });
+        await browser.screenshot(igApi.sessionPage, './tmp/screenshot.jpg');
+        logger.error(error.stack, { label: `ig-web @${L_USERNAME}` });
         await browser.close();
         await client.close();
     }
@@ -153,7 +158,8 @@ cron.schedule('50 23 * * *', async () => {
             await msleep(2000);
         }
     } catch (error) {
-        logger.error(error.stack, { label: `ig-web ${L_USERNAME}` });
+        await browser.screenshot(igApi.sessionPage, './tmp/screenshot.jpg');
+        logger.error(error.stack, { label: `ig-web @${L_USERNAME}` });
         await browser.close();
         await client.close();
     }

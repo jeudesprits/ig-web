@@ -66,7 +66,6 @@ export class TelegramTransport extends Transport {
     log(info: any, callback: () => void): any {
         setImmediate(() => this.emit('logged', info));
 
-        console.log(info);
         this.sendText(info[Symbol.for('message')])
             .then(() => {
                 if ((info.withScreenshot === undefined || info.withScreenshot === true) &&
