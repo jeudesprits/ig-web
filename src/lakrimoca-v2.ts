@@ -1,7 +1,6 @@
 import Browser from './browser';
 import IGApi from './api/ig';
 import client from './mongo/client';
-import db from './mongo/db';
 import cron from 'node-cron';
 import { PreferredProfile, VisitedPost, Following } from './mongo/models';
 import logger from './logger';
@@ -13,10 +12,11 @@ cron.schedule('*/15 * * * *', async () => {
     const browser = new Browser();
     await browser.launch();
 
-    await db.Result;
-    PreferredProfile.use(db.igLakrimoca);
-    VisitedPost.use(db.igLakrimoca);
-    Following.use(db.igLakrimoca);
+    await client.Ready
+
+    const FollowingCl = client.db('igLakrimocaDB').collection<Following>('followings');
+    const PreferredProfileCl = client.db('igLakrimocaDB').collection<PreferredProfile>('preferredProfiles');
+    const VisitedPostCl = client.db('igLakrimocaDB').collection<VisitedPost>('visitedPosts');
 
     const igApi = new IGApi(browser);
     await igApi.Result;
@@ -30,10 +30,10 @@ cron.schedule('*/15 * * * *', async () => {
         await client.close();
     }
 
-    const [randomProfile] = await PreferredProfile.find<PreferredProfile>({}, null, {
+    const [randomProfile] = await PreferredProfileCl.find({}, {
         limit: 1,
-        skip: Math.random() * (await PreferredProfile.find<PreferredProfile>({})).length,
-    });
+        skip: Math.random() * await PreferredProfileCl.countDocuments()
+    }).toArray();
 
     const FOLLOW_LIMIT = 30;
     let currentFollows = 0;
@@ -51,15 +51,14 @@ cron.schedule('*/15 * * * *', async () => {
 
                 if (commentsDisabled) { continue; }
 
-                let visitedPost = await VisitedPost.findOne<VisitedPost>({ shortcode });
+                let visitedPost = await VisitedPostCl.findOne({ shortcode });
                 if (visitedPost) {
                     if (!visitedPost.commentsHasNext) { continue };
                 } else {
-                    visitedPost = new VisitedPost({
+                    visitedPost = {
                         shortcode,
-                        commentsHasNext: true,
-                    });
-                    await visitedPost.save();
+                        commentsHasNext: true
+                    };
                 }
 
                 for await (const commentsPortion of igApi.mediaComments(shortcode)) {
@@ -78,8 +77,8 @@ cron.schedule('*/15 * * * *', async () => {
                         } = edge;
 
                         if (currentFollows >= FOLLOW_LIMIT) {
-                            visitedPost.setField('commentsHasNext', hasNextPage);
-                            await visitedPost.save();
+                            visitedPost.commentsHasNext = hasNextPage;
+                            await VisitedPostCl.updateOne({ shortcode }, { $set: visitedPost }, { upsert: true });
 
                             break outerLoop;
                         }
@@ -99,19 +98,19 @@ cron.schedule('*/15 * * * *', async () => {
                             continue;
                         }
 
-                        const following = new Following({
+
+                        await FollowingCl.insertOne({
                             username,
                             startedSince: new Date(),
                         });
-                        await following.save();
 
                         ++currentFollows;
 
                         await msleep(2000);
                     }
 
-                    visitedPost.setField('commentsHasNext', hasNextPage);
-                    await visitedPost.save();
+                    visitedPost.commentsHasNext = hasNextPage;
+                    await VisitedPostCl.updateOne({ shortcode }, { $set: visitedPost }, { upsert: true });
                 }
             }
         }
@@ -124,12 +123,13 @@ cron.schedule('*/15 * * * *', async () => {
     }
 }, { timezone: 'Asia/Tashkent' });
 
-cron.schedule('50 23 * * *', async () => {
+cron.schedule('4 0 * * *', async () => {
     const browser = new Browser();
     await browser.launch();
 
-    await db.Result;
-    Following.use(db.igLakrimoca);
+    await client.Ready
+
+    const FollowingCl = client.db('igLakrimocaDB').collection<Following>('followings');
 
     const igApi = new IGApi(browser);
     await igApi.Result;
@@ -143,12 +143,12 @@ cron.schedule('50 23 * * *', async () => {
         await client.close();
     }
 
-    const lastDayFollowings = await Following.find<Following>({
+    const lastDayFollowings = await FollowingCl.find({
         startedSince: {
             $lt: new Date(),
             $gte: new Date(new Date().setDate(new Date().getDate() - 1)),
         }
-    });
+    }).toArray();
 
     let followBackCount = 0;
     try {
@@ -165,12 +165,13 @@ cron.schedule('50 23 * * *', async () => {
     }
 
     logger.info(
-        `✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️
-        Статистика дня:
-        📌 ${lastDayFollowings.length} подписок
-        📌 ${followBackCount} подписок в ответ
-        Итоговая эффективность:
-        📈 ${followBackCount * 100 / lastDayFollowings.length}%`,
+        `
+✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️
+Статистика дня:
+📌 ${lastDayFollowings.length} подписок
+📌 ${followBackCount} подписок в ответ
+Итоговая эффективность:
+📈 ~${(followBackCount * 100 / lastDayFollowings.length).toPrecision(1)}%`,
         { label: `ig-web ${L_USERNAME}`, withScreenshot: false }
     );
 

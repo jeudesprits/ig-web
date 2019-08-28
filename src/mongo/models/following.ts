@@ -1,9 +1,4 @@
-import { BaseModel, Model, Field } from 'maraquia';
-
-@Model({ collectionName: 'followings' })
-export default class Following extends BaseModel {
-    @Field()
+export default interface Following {
     username: string;
-    @Field()
     startedSince: Date;
 }
