@@ -16,7 +16,7 @@ export class MongoClient {
     }
 
     private async connect() {
-        this._client = await MongoClientNative.connect(MONGO_URI, { useNewUrlParser: true });
+        this._client = await MongoClientNative.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology:  true });
     }
 
     async close() {

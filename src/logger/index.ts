@@ -6,9 +6,7 @@ import { isProduction } from '../utils/helpers';
 import secrets from '../utils/secrets';
 const { TG_TOKEN, TG_CHANNEL_NAME } = secrets;
 
-const myFormat = printf(({ level, message, label, timestamp }) => {
-    return `${timestamp} [${label}] ${level}: ${message}`;
-});
+const myFormat = printf(({ level, message, label, timestamp }) => `${timestamp} [${label}] ${level}: ${message}`);
 
 const logger = createLogger({
     level: isProduction() ? 'info' : 'debug',
@@ -18,14 +16,14 @@ const logger = createLogger({
 if (isProduction()) {
     logger.add(
         new File({
-            filename: 'logs/error.log',
+            filename: './logs/error.log',
             level: 'error',
         }),
     );
 
     logger.add(
         new File({
-            filename: 'logs/combined.log',
+            filename: './logs/combined.log',
             level: 'info',
         }),
     );
@@ -41,7 +39,7 @@ logger.add(
     new Telegram({
         token: TG_TOKEN,
         chatId: TG_CHANNEL_NAME,
-        pathToImage: 'tmp/screenshot.jpg',
+        pathToImage: './tmp/screenshot.jpg',
     }),
 );
 

@@ -11,9 +11,7 @@ interface TelegramTransportOptions extends Transport.TransportStreamOptions {
 
 export class TelegramTransport extends Transport {
     private token: string;
-
     private chatId: string;
-
     private pathToImage: string;
 
     constructor(options: TelegramTransportOptions) {
@@ -68,11 +66,11 @@ export class TelegramTransport extends Transport {
     log(info: any, callback: () => void): any {
         setImmediate(() => this.emit('logged', info));
 
+        console.log(info);
         this.sendText(info[Symbol.for('message')])
             .then(() => {
-                if (existsSync(this.pathToImage)) {
-                    return this.sendImage();
-                }
+                if ((info.withScreenshot === undefined || info.withScreenshot === true) &&
+                    existsSync(this.pathToImage)) { return this.sendImage(); }
                 return;
             })
             .then(() => callback())
