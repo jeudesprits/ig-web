@@ -81,7 +81,6 @@ cron.schedule('*/15 * * * *', async () => {
 
                         if (currentFollows >= FOLLOW_LIMIT) {
                             visitedPost.commentsHasNext = hasNextPage;
-                            console.log('If ', visitedPost);
                             await VisitedPostCl.updateOne({ shortcode }, { $set: visitedPost }, { upsert: true });
 
                             break outerLoop;
@@ -108,14 +107,12 @@ cron.schedule('*/15 * * * *', async () => {
                             startedSince: new Date(),
                         });
 
-                        console.log(username);
                         ++currentFollows;
 
                         await msleep(2000);
                     }
 
                     visitedPost.commentsHasNext = hasNextPage;
-                    console.log('End ', visitedPost);
                     await VisitedPostCl.updateOne({ shortcode }, { $set: visitedPost }, { upsert: true });
                 }
             }
