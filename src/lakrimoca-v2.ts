@@ -96,7 +96,9 @@ cron.schedule('*/15 * * * *', async () => {
                             await msleep(2000);
                             await igApi.profileFollow(username);
                             await msleep(2000);
-                        } catch {
+                        } catch(error) {
+                            await browser.screenshot(igApi.sessionPage, './tmp/screenshot.jpg');
+                            logger.error(error.stack, { label: `ig-web @${L_USERNAME}`});
                             await msleep(2000);
                             continue;
                         }
