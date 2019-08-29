@@ -121,8 +121,7 @@ cron.schedule('*/15 * * * *', async () => {
             }
         }
     } catch (error) {
-        await browser.screenshot(igApi.sessionPage, './tmp/screenshot.jpg');
-        logger.error(error.stack, { label: `ig-web @${L_USERNAME}` });
+        logger.error(error.stack, { label: `ig-web @${L_USERNAME}`, withScreenshot: false });
     } finally {
         await browser.close();
         await client.close();

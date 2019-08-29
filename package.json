@@ -24,7 +24,7 @@
   "homepage": "https://github.com/jeudesprits/ig-web#readme",
   "dependencies": {
     "dotenv-safe": "^6.1.0",
-    "form-data": "^2.5.0",
+    "form-data": "^2.5.1",
     "mongodb": "^3.3.2",
     "node-cron": "^2.0.3",
     "node-fetch": "^2.6.0",

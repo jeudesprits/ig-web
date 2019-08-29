@@ -278,9 +278,19 @@ export default class IGApi {
         } = await currentPage.evaluate('window._sharedData');
 
         let media = edge_owner_to_timeline_media;
-        do {
-            yield media;
 
+        const {
+            page_info: { has_next_page: hasNext },
+        } = media;
+
+        if (!hasNext) {
+            yield media;
+            return;
+        } else {
+            yield media;
+        }
+
+        do {
             const [response] = await Promise.all([
                 currentPage.waitForResponse(
                     response => response.request().resourceType() === 'xhr' && response.url().includes('query_hash'),
@@ -303,6 +313,8 @@ export default class IGApi {
             if (!hasNext) {
                 yield media;
                 break;
+            } else {
+                yield media;
             }
 
             await currentPage.waitFor(2000);
