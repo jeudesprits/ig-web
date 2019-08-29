@@ -38,7 +38,8 @@ cron.schedule('*/15 * * * *', async () => {
     const FOLLOW_LIMIT = 30;
     let currentFollows = 0;
     try {
-        outerLoop: for await (const postsPortion of igApi.profileMedia(randomProfile.username)) {
+        const profileMediaPage = await browser.newPage();
+        outerLoop: for await (const postsPortion of igApi.profileMedia(randomProfile.username, profileMediaPage)) {
 
             const { edges } = postsPortion;
             for (const edge of edges) {
@@ -61,7 +62,9 @@ cron.schedule('*/15 * * * *', async () => {
                     };
                 }
 
-                for await (const commentsPortion of igApi.mediaComments(shortcode)) {
+
+                const mediaCommentsPage = await browser.newPage();
+                for await (const commentsPortion of igApi.mediaComments(shortcode, mediaCommentsPage)) {
 
                     const { edges, page_info: pageInfo } = commentsPortion;
                     const { has_next_page: hasNextPage } = pageInfo;
@@ -78,6 +81,7 @@ cron.schedule('*/15 * * * *', async () => {
 
                         if (currentFollows >= FOLLOW_LIMIT) {
                             visitedPost.commentsHasNext = hasNextPage;
+                            console.log('If ', visitedPost);
                             await VisitedPostCl.updateOne({ shortcode }, { $set: visitedPost }, { upsert: true });
 
                             break outerLoop;
@@ -89,7 +93,7 @@ cron.schedule('*/15 * * * *', async () => {
                         }
 
                         try {
-                            await igApi.mediaCommentLike(shortcode, commentId);
+                            await igApi.mediaCommentLike(shortcode, commentId, mediaCommentsPage);
                             await msleep(2000);
                             await igApi.profileFollow(username);
                             await msleep(2000);
@@ -104,12 +108,14 @@ cron.schedule('*/15 * * * *', async () => {
                             startedSince: new Date(),
                         });
 
+                        console.log(username);
                         ++currentFollows;
 
                         await msleep(2000);
                     }
 
                     visitedPost.commentsHasNext = hasNextPage;
+                    console.log('End ', visitedPost);
                     await VisitedPostCl.updateOne({ shortcode }, { $set: visitedPost }, { upsert: true });
                 }
             }
@@ -123,7 +129,7 @@ cron.schedule('*/15 * * * *', async () => {
     }
 }, { timezone: 'Asia/Tashkent' });
 
-cron.schedule('4 0 * * *', async () => {
+cron.schedule('50 23 * * *', async () => {
     const browser = new Browser();
     await browser.launch();
 

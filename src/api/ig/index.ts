@@ -260,8 +260,10 @@ export default class IGApi {
         return user;
     }
 
-    async *profileMedia(username: string) {
-        await this._sessionPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
+    async *profileMedia(username: string, page?: Page) {
+        const currentPage = page ? page : this._sessionPage;
+
+        await currentPage.goto(`https://www.instagram.com/${username}/`, { waitUntil: 'networkidle0' });
 
         const {
             entry_data: {
@@ -273,17 +275,17 @@ export default class IGApi {
                     },
                 ],
             },
-        } = await this._sessionPage.evaluate('window._sharedData');
+        } = await currentPage.evaluate('window._sharedData');
 
         let media = edge_owner_to_timeline_media;
         do {
             yield media;
 
             const [response] = await Promise.all([
-                this._sessionPage.waitForResponse(
+                currentPage.waitForResponse(
                     response => response.request().resourceType() === 'xhr' && response.url().includes('query_hash'),
                 ),
-                this._sessionPage.evaluate(() => window.scrollTo(0, window.document.body.scrollHeight)),
+                currentPage.evaluate(() => window.scrollTo(0, window.document.body.scrollHeight)),
             ]);
 
             const {
@@ -303,7 +305,7 @@ export default class IGApi {
                 break;
             }
 
-            await this._sessionPage.waitFor(2000);
+            await currentPage.waitFor(2000);
         } while (true);
     }
 
@@ -688,8 +690,10 @@ export default class IGApi {
         return shortcode_media;
     }
 
-    async *mediaComments(shortcode: string) {
-        await this._sessionPage.goto(`https://www.instagram.com/p/${shortcode}/comments/`, {
+    async *mediaComments(shortcode: string, page?: Page) {
+        const currentPage = page ? page : this._sessionPage;
+
+        await currentPage.goto(`https://www.instagram.com/p/${shortcode}/comments/`, {
             waitUntil: 'networkidle0',
         });
 
@@ -703,20 +707,30 @@ export default class IGApi {
                     },
                 ],
             },
-        } = await this._sessionPage.evaluate('window._sharedData');
+        } = await currentPage.evaluate('window._sharedData');
 
         let comments = edge_media_to_parent_comment;
-        do {
-            yield comments;
 
+        const {
+            page_info: { has_next_page: hasNext },
+        } = comments;
+
+        if (!hasNext) {
+            yield comments;
+            return;
+        } else {
+            yield comments;
+        }
+
+        do {
             const [response] = await Promise.all([
-                this._sessionPage.waitForResponse(
+                currentPage.waitForResponse(
                     res =>
                         res.request().resourceType() === 'xhr' &&
                         res.url().includes('query_hash') &&
                         res.url().includes(`shortcode%22%3A%22${shortcode}`),
                 ),
-                this._sessionPage.tap('button.afkep'),
+                currentPage.tap('button.afkep'),
             ]);
 
             const {
@@ -734,9 +748,11 @@ export default class IGApi {
             if (!hasNext) {
                 yield comments;
                 break;
+            } else {
+                yield comments;
             }
 
-            await this._sessionPage.waitFor(2000);
+            await currentPage.waitFor(2000);
         } while (true);
     }
 
@@ -786,8 +802,8 @@ export default class IGApi {
         return json;
     }
 
-    private async _mediaCommentLikeUnlikeBase(type: 'like' | 'unlike', shortcode: string, commentId: string) {
-        await this._sessionPage.goto(`https://www.instagram.com/p/${shortcode}/comments/`, {
+    private async _mediaCommentLikeUnlikeBase(type: 'like' | 'unlike', shortcode: string, commentId: string, page: Page) {
+        await page.goto(`https://www.instagram.com/p/${shortcode}/comments/`, {
             waitUntil: 'networkidle0',
         });
 
@@ -801,7 +817,7 @@ export default class IGApi {
             'X-Instagram-Ajax': await this.rolloutHash(),
             'X-Requested-With': 'XMLHttpRequest',
         };
-        const json = await this._sessionPage.evaluate(
+        const json = await page.evaluate(
             async (uri, headers, shortcode) => {
                 const response = await window.fetch(uri, {
                     method: 'POST',
@@ -829,12 +845,14 @@ export default class IGApi {
         return json;
     }
 
-    async mediaCommentLike(shortcode: string, commentId: string) {
-        return this._mediaCommentLikeUnlikeBase('like', shortcode, commentId);
+    async mediaCommentLike(shortcode: string, commentId: string, page?: Page) {
+        const currentPage = page ? page : this._sessionPage;
+        return this._mediaCommentLikeUnlikeBase('like', shortcode, commentId, currentPage);
     }
 
-    async mediaCommentUnlike(shortcode: string, commentId: string) {
-        return this._mediaCommentLikeUnlikeBase('unlike', shortcode, commentId);
+    async mediaCommentUnlike(shortcode: string, commentId: string, page?: Page) {
+        const currentPage = page ? page : this._sessionPage;
+        return this._mediaCommentLikeUnlikeBase('unlike', shortcode, commentId, currentPage);
     }
 
     async mediaCommentSpamReport(shortcode: string, commentId: string) {
