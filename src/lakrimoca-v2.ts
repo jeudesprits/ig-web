@@ -8,7 +8,7 @@ import secrets from './utils/secrets';
 const { L_USERNAME, L_PASSWORD } = secrets;
 import { msleep } from './utils/helpers';
 
-cron.schedule('*/15 * * * *', async () => {
+cron.schedule('0 * * * *', async () => {
     const browser = new Browser();
     await browser.launch();
 
