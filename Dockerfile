@@ -48,4 +48,4 @@ COPY . .
 
 RUN npm run build
 
-CMD ["node", "dist/unfollow.js"]
+CMD ["node", "dist/lakrimoca-v2.js"]
