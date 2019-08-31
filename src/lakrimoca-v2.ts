@@ -62,7 +62,6 @@ cron.schedule('0 * * * *', async () => {
                     };
                 }
 
-
                 const mediaCommentsPage = await browser.newPage();
                 for await (const commentsPortion of igApi.mediaComments(shortcode, mediaCommentsPage)) {
 
@@ -96,10 +95,11 @@ cron.schedule('0 * * * *', async () => {
                             await msleep(2000);
                             await igApi.profileFollow(username);
                             await msleep(2000);
-                        } catch(error) {
+                        } catch (error) {
                             await browser.screenshot(igApi.sessionPage, './tmp/screenshot.jpg');
-                            logger.error(error.stack, { label: `ig-web @${L_USERNAME}`});
+                            logger.error(error.stack.toString(), { label: `ig-web @${L_USERNAME}` });
                             await msleep(2000);
+                            if (error.stack.includes('Action Blocked')) { break outerLoop; }
                             continue;
                         }
 
