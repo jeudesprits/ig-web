@@ -7,6 +7,7 @@ import logger from './logger';
 import secrets from './utils/secrets';
 const { L_USERNAME, L_PASSWORD } = secrets;
 import { msleep } from './utils/helpers';
+import dedent from 'dedent';
 
 cron.schedule('0 * * * *', async () => {
     const browser = new Browser();
@@ -169,13 +170,12 @@ cron.schedule('50 23 * * *', async () => {
     }
 
     logger.info(
-        `
-✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️
-Статистика дня:
-📌 ${lastDayFollowings.length} подписок
-📌 ${followBackCount} подписок в ответ
-Итоговая эффективность:
-📈 ~${(followBackCount * 100 / lastDayFollowings.length).toPrecision(1)}%`,
+        dedent`✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️✳️️️️️️️️
+               Статистика дня:
+               📌 ${lastDayFollowings.length} подписок
+               📌 ${followBackCount} подписок в ответ
+               Итоговая эффективность:
+               📈 ~${(followBackCount * 100 / lastDayFollowings.length).toPrecision(1)}%`,
         { label: `ig-web ${L_USERNAME}`, withScreenshot: false }
     );
 

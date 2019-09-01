@@ -639,12 +639,14 @@ export default class IGApi {
         }
 
         const headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
             Accept: '*/*',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'X-Csrftoken': await this.csrfToken(),
-            'X-Ig-App-Id': await this.instagramWebFBAppId(),
-            'X-Instagram-Ajax': await this.rolloutHash(),
+            'Accept-Language': 'en-us',
             'X-Requested-With': 'XMLHttpRequest',
+            'X-IG-App-ID': await this.instagramWebFBAppId(),
+            'X-Instagram-AJAX': await this.rolloutHash(),
+            'X-IG-WWW-Claim': await this.claim(),
+            'X-CSRFToken': await this.csrfToken(),
         };
         const uri = `https://www.instagram.com/web/friendships/${id}/${type}/`;
         const json = await this._sessionPage.evaluate(
@@ -822,13 +824,14 @@ export default class IGApi {
 
         const uri = `https://www.instagram.com/web/comments/${type}/${commentId}/`;
         const headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
             Accept: '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-Csrftoken': await this.csrfToken(),
-            'X-Ig-App-Id': await this.instagramWebFBAppId(),
-            'X-Instagram-Ajax': await this.rolloutHash(),
             'X-Requested-With': 'XMLHttpRequest',
+            'X-IG-App-ID': await this.instagramWebFBAppId(),
+            'X-Instagram-AJAX': await this.rolloutHash(),
+            'X-IG-WWW-Claim': await this.claim(),
+            'X-CSRFToken': await this.csrfToken(),
         };
         const json = await page.evaluate(
             async (uri, headers, shortcode) => {
@@ -1934,5 +1937,10 @@ export default class IGApi {
     async rolloutHash(): Promise<string> {
         const { rollout_hash } = await this._sessionPage.evaluate('window._sharedData');
         return rollout_hash;
+    }
+
+    async claim(): Promise<string> {
+        const { claim } = await this._sessionPage.evaluate(`window.sessionStorage['www-claim-v2']`);
+        return claim;
     }
 }

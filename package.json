@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/jeudesprits/ig-web#readme",
   "dependencies": {
+    "dedent": "^0.7.0",
     "dotenv-safe": "^6.1.0",
     "form-data": "^2.5.1",
     "mongodb": "^3.3.2",
@@ -36,6 +37,7 @@
     "winston-transport": "^4.3.0"
   },
   "devDependencies": {
+    "@types/dedent": "^0.7.0",
     "@types/dotenv-safe": "^5.0.3",
     "@types/form-data": "^2.5.0",
     "@types/mongodb": "^3.3.1",
