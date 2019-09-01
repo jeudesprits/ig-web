@@ -128,7 +128,7 @@ cron.schedule('0 * * * *', async () => {
     }
 }, { timezone: 'Asia/Tashkent' });
 
-cron.schedule('50 23 * * *', async () => {
+cron.schedule('30 23 * * *', async () => {
     const browser = new Browser();
     await browser.launch();
 
