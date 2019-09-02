@@ -5,6 +5,7 @@ import logger from './logger';
 import secrets from './utils/secrets';
 const { L_USERNAME, L_PASSWORD } = secrets;
 const TARGET = 'nargizjan_';
+import { msleep } from './utils/helpers';
 
 // tslint:disable-next-line: no-floating-promises
 (async () => {
@@ -77,7 +78,11 @@ const TARGET = 'nargizjan_';
                     profile_pic_url,
                     username_,
                 });
+
+                await msleep(2000);
             }
+
+            await msleep(3000);
         }
     } catch (error) {
         logger.error(error.stack, { label: 'ig-web Analitics' });
