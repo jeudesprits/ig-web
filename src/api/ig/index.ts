@@ -333,11 +333,11 @@ export default class IGApi {
         };
         const headers = {
             Accept: '*/*',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'X-Csrftoken': await this.csrfToken(),
-            'X-Ig-App-Id': await this.instagramWebFBAppId(),
-            'X-Instagram-Ajax': await this.rolloutHash(),
+            'Accept-Language': 'en-us',
             'X-Requested-With': 'XMLHttpRequest',
+            'X-IG-App-ID': await this.instagramWebFBAppId(),
+            'X-IG-WWW-Claim': await this.claim(),
+            'X-CSRFToken': await this.csrfToken(),
         };
 
         do {
@@ -424,11 +424,11 @@ export default class IGApi {
         const uri = `https://www.instagram.com/graphql/query/?${stringify(uriComponents)}`;
         const headers = {
             Accept: '*/*',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'X-Csrftoken': await this.csrfToken(),
-            'X-Ig-App-Id': await this.instagramWebFBAppId(),
-            'X-Instagram-Ajax': await this.rolloutHash(),
+            'Accept-Language': 'en-us',
             'X-Requested-With': 'XMLHttpRequest',
+            'X-IG-App-ID': await this.instagramWebFBAppId(),
+            'X-IG-WWW-Claim': await this.claim(),
+            'X-CSRFToken': await this.csrfToken(),
         };
         const json = await this._sessionPage.evaluate(
             async (uri, headers, username) => {
