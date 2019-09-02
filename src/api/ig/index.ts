@@ -357,7 +357,8 @@ export default class IGApi {
                         referrerPolicy: 'no-referrer-when-downgrade',
                     });
                     if (response.status !== 200) {
-                        throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+                        // tslint:disable-next-line: no-string-throw
+                        throw `Response code is ${response.status}.\n${await response.text()}`;
                     }
                     return response.json();
                 },
@@ -367,7 +368,7 @@ export default class IGApi {
             );
 
             if (json.status !== 'ok') {
-                throw new Error(`Response status is ${json.status}. Something went wrong.`);
+                throw new Error(`Response status is ${json.status}.\n${json}`);
             }
 
             yield json;
@@ -441,7 +442,8 @@ export default class IGApi {
                     referrerPolicy: 'no-referrer-when-downgrade',
                 });
                 if (response.status !== 200) {
-                    throw new Error(`Response code is ${response.statusText}. Something went wrong.`);
+                    // tslint:disable-next-line: no-string-throw
+                    throw `Response code is ${response.status}.\n${await response.text()}`;
                 }
                 return response.json();
             },
@@ -451,7 +453,7 @@ export default class IGApi {
         );
 
         if (json.status !== 'ok') {
-            throw new Error(`Response status is ${json.status}. Something went wrong.`);
+            throw new Error(`Response status is ${json.status}.\n${json}`);
         }
 
         yield json;
