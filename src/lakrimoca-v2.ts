@@ -36,7 +36,7 @@ cron.schedule('0 * * * *', async () => {
         skip: Math.random() * await PreferredProfileCl.countDocuments()
     }).toArray();
 
-    const FOLLOW_LIMIT = 30;
+    const FOLLOW_LIMIT = 10;
     let currentFollows = 0;
     try {
         const profileMediaPage = await browser.newPage();
